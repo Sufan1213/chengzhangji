@@ -1,10 +1,11 @@
 // 🍊成长记 PWA Service Worker
-const CACHE = 'chengzhangji-v1';
+const CACHE = 'chengzhangji-v8';
 const SHELL = [
   './',
   './index.html',
   './style.css',
   './app.js',
+  './cat_kb_data.js',
   './manifest.json',
   './icons/icon.svg'
 ];

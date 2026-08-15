@@ -27,7 +27,9 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-group">日常</div>
     <button class="nav-btn active" data-tab="plan"><span class="ni">📝</span><span class="nt">今日计划</span></button>
+    <div class="sidebar-group">日常</div>
     <button class="nav-btn" data-tab="sleep"><span class="ni">🌙</span><span class="nt">早睡计划</span></button>
+    <button class="nav-btn" data-tab="weekly"><span class="ni">📊</span><span class="nt">每周数据</span></button>
     <div class="sidebar-group">健康</div>
     <button class="nav-btn" data-tab="diet"><span class="ni">🍽️</span><span class="nt">每日饮食</span></button>
     <button class="nav-btn" data-tab="workout"><span class="ni">🏃</span><span class="nt">运动减肥</span></button>
@@ -36,12 +38,12 @@
     <button class="nav-btn" data-tab="finance"><span class="ni">💰</span><span class="nt">个人记账</span></button>
     <button class="nav-btn" data-tab="news"><span class="ni">📰</span><span class="nt">每日精选</span></button>
     <button class="nav-btn" data-tab="reading"><span class="ni">📚</span><span class="nt">阅读观影</span></button>
-    <button class="nav-btn" data-tab="weekly"><span class="ni">📊</span><span class="nt">每周数据</span></button>
+    <button class="nav-btn" data-tab="inspire"><span class="ni">💡</span><span class="nt">灵感箱</span></button>
     <div class="sidebar-group">生活</div>
     <button class="nav-btn" data-tab="cats"><span class="ni">🐱</span><span class="nt">小猫档案</span></button>
+    <button class="nav-btn" data-tab="stock"><span class="ni">📦</span><span class="nt">仓库管理</span></button>
     <button class="nav-btn" data-tab="beauty"><span class="ni">💄</span><span class="nt">美妆学习</span></button>
     <button class="nav-btn" data-tab="outfit"><span class="ni">👗</span><span class="nt">穿搭</span></button>
-    <button class="nav-btn" data-tab="douyin"><span class="ni">📷</span><span class="nt">抖音话题</span></button>
     <button class="nav-btn" data-tab="wish"><span class="ni">🎁</span><span class="nt">心愿屋</span></button>
     <div class="sidebar-foot">
       <button class="sync-btn-side" onclick="openSyncModal()">☁️ 数据同步</button>
@@ -52,8 +54,8 @@
   <main class="content" id="content">
     <!-- 1. 今日计划 -->
     <section class="module active" id="plan">
-      <h2 class="mod-title">📝 今日计划 · 待办 & 番茄 & 保健品</h2>
-      <p class="mod-desc">工作党的每日中枢：列出今天要做的事，用番茄钟专注，顺手完成保健品打卡。</p>
+      <h2 class="mod-title">📝 今日计划 · 待办 & 保健品</h2>
+      <p class="mod-desc">工作党的每日中枢：列出今天要做的事，顺手完成保健品与泡茶打卡。</p>
       <div class="grid-2">
         <div class="card">
           <div class="card-h">✅ 今日待办 <button class="mini-btn" onclick="renderTodos()">↻</button></div>
@@ -83,45 +85,44 @@
           <div id="todoMasters"></div>
         </div>
         <div class="card">
-          <div class="card-h">🍅 番茄钟</div>
-          <div class="pomo-tabs">
-            <button class="pomo-tab active" data-mode="focus" onclick="switchPomoMode('focus')">专注番茄</button>
-            <button class="pomo-tab" data-mode="music" onclick="switchPomoMode('music')">音乐番茄</button>
+          <div class="card-h">💊 今日保健品 & 泡茶打卡 <span class="hint">勾选你今天吃的，和待办同一天记录</span></div>
+          <div class="supp-area">
+            <div class="supp-area-t">💊 保健品</div>
+            <div class="supp-grid" id="suppGrid"></div>
           </div>
-          <div class="pomo-mode-panel active" id="focusPomo">
-            <div class="pomo">
-              <div class="pomo-time" id="pomoTime">25:00</div>
-              <div class="pomo-mode" id="pomoMode">专注</div>
-              <div class="pomo-btns">
-                <button class="btn-p" id="pomoToggle" onclick="togglePomo()">开始</button>
-                <button class="btn-s" onclick="resetPomo()">重置</button>
+          <div class="supp-area">
+            <div class="supp-area-t">🍵 泡茶</div>
+            <div class="supp-grid" id="teaGrid"></div>
+            <details class="tea-manager">
+              <summary>🍵 管理我的茶单（44款可选 · 可排序 · 可自定义）</summary>
+              <div class="tm-body">
+                <div class="tm-h">已选茶单</div>
+                <div id="teaFavList" class="tm-favs"></div>
+                <div class="tm-add">
+                  <input type="text" id="teaCustomInput" placeholder="自定义茶名，如 补气血茶">
+                  <button class="btn-p" onclick="addCustomTea()">添加</button>
+                </div>
+                <div class="tm-h">44款预设</div>
+                <div id="teaPresetList" class="tm-presets"></div>
               </div>
-              <div class="pomo-count">今日完成：<span id="pomoDone">0</span> 个番茄</div>
-            </div>
-            <div class="hint" style="margin-top:8px">适合：背单词、看学习视频、写教案等需要专注的任务。</div>
+            </details>
           </div>
-          <div class="pomo-mode-panel" id="musicPomo">
-            <div class="music-player" id="musicPlayer">
-              <div class="music-now" id="musicNow"><div class="hint">点击歌单开始听歌番茄 🎵</div></div>
-              <div class="music-controls">
-                <button class="btn-s" onclick="prevMusicSong()">⏮</button>
-                <button class="btn-p" id="musicToggle" onclick="toggleMusicPomo()">开始</button>
-                <button class="btn-s" onclick="nextMusicSong()">⏭</button>
-                <button class="btn-s" onclick="stopMusicPomo()">⏹</button>
-                <label class="chk"><input type="checkbox" id="musicAutoNext" checked onchange="musicAutoNext=this.checked"> 连续播放</label>
-              </div>
-              <div class="music-count">今日已完成 <span id="musicCount">0</span> 首歌 = 等量番茄</div>
-              <button class="btn-p mt8" style="width:100%" onclick="openNetease()">🎧 一键去网易云听当前歌曲（账号 15329719907 · 多锻炼少生病）</button>
-              <div class="music-list" id="musicList"></div>
-              <div class="hint" style="margin-top:8px">每天自动推荐 10 首好歌（R&B 为主，混搭好听的风格）。听一首歌 = 一个番茄。点歌单里的🎧可直接跳网易云搜索；VIP 歌曲请用网易云 App 播放。点开 B站学习/训练视频时音乐会自动暂停。</div>
-            </div>
+          <div class="supp-add">
+            <input type="text" id="suppCustom" placeholder="临时新增一种保健品或茶（计入今天）">
+            <select id="suppCustomType"><option value="S">保健品</option><option value="T">泡茶</option></select>
+            <button class="btn-p" onclick="addCustomSupp()">添加</button>
           </div>
+          <button class="btn-p mt8" onclick="saveSupplements()">保存今日打卡</button>
         </div>
       </div>
       <div class="card">
-        <div class="card-h">💊 今日保健品打卡 <span class="hint">勾选你今天吃的，和待办/番茄同一天记录</span></div>
-        <div class="supp-grid" id="suppGrid"></div>
-        <button class="btn-p mt8" onclick="saveSupplements()">保存保健品打卡</button>
+        <details class="sh-details" open>
+          <summary class="sh-summary">
+            <span>📆 近 14 天打卡记录</span>
+            <span class="sh-stat" id="shStat">加载中…</span>
+          </summary>
+          <div id="suppHistory" class="sh-calendar"></div>
+        </details>
       </div>
       <div class="card" id="aishangCard">
         <div class="card-h">🌿 艾上山野三伏贴计划 <span class="hint">7月21日起自动按阶段轮换</span></div>
@@ -195,11 +196,13 @@
         <div class="chart-box"><canvas id="sleepChart"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-h">🛏️ 记录今晚几点睡</div>
+        <div class="card-h">🛏️ 记录入睡时间（可按“哪一天”补记）</div>
         <div class="form-row">
-          <label>今天实际入睡时间<input type="time" id="sleepRecord"></label>
+          <label>这个觉算哪一天<input type="date" id="sleepRecordDate"></label>
+          <label>实际入睡时间<input type="time" id="sleepRecord"></label>
         </div>
-        <button class="btn-p mt8" onclick="saveSleepRecord()">保存今天睡眠记录</button>
+        <div class="hint mt8">💡 补记昨天/前几天的入睡时间也可以：比如 8/15 凌晨 02:00 入睡，就把“哪一天”选 8/15、时间填 02:00。</div>
+        <button class="btn-p mt8" onclick="saveSleepRecord()">保存睡眠记录</button>
         <div class="hint mt8" id="sleepRecordHint"></div>
       </div>
       <div class="grid-2">
@@ -295,10 +298,12 @@
         <div class="card-h">📐 你的身材数据 &amp; 目标</div>
         <p class="hint">基础数据（首次记录日写入）：体重 <b>66kg</b> · 腰围 <b>82cm</b> · 臀围 <b>102cm</b> · 大腿围 <b>63cm</b>。之后每天记体重、每 3 个月记三围，自动对比基础数据做分析。</p>
 
-        <div class="bs-sub">⚖️ 每日体重记录</div>
+        <div class="bs-sub">⚖️ 每日体重记录 <span class="hint">支持 kg/斤 自动识别</span></div>
         <div class="form-row">
           <label>日期<input type="date" id="bsWeightDate"></label>
-          <label>体重(kg)<input type="number" id="bsWeightKg" step="0.1" placeholder="66.0"></label>
+          <label>体重<input type="number" id="bsWeightKg" step="0.1" placeholder="66.0 或 120" oninput="updateWeightPreview()"></label>
+          <label>单位<select id="bsWeightUnit" onchange="updateWeightPreview()"><option value="auto">自动判断</option><option value="kg">kg</option><option value="jin">斤</option></select></label>
+          <span id="bsWeightPreview" class="weight-preview"></span>
           <label>备注<input type="text" id="bsWeightNote" placeholder="如：生理期/运动后"></label>
         </div>
         <button class="btn-p mt8" onclick="saveBsWeight()">保存体重</button>
@@ -395,13 +400,27 @@
           <label>基金(手动) ¥<input type="number" id="assetFunds" onchange="saveAsset('funds',this.value)"></label>
           <label>黄金(g) <input type="number" id="assetGold" onchange="saveAsset('gold',this.value)"></label>
         </div>
-        <div class="debt-inputs">
-          <div class="di-title">💳 负债（花呗 / 信用卡，帮你慢慢戒掉）</div>
-          <label>花呗欠款 ¥<input type="number" id="assetHuabei" onchange="saveAsset('huabei',this.value)"></label>
-          <label>信用卡欠款 ¥<input type="number" id="assetCard" onchange="saveAsset('card',this.value)"></label>
-        </div>
         <div id="assetSummary" class="asset-summary"></div>
         <div class="hint" id="assetHint"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">💳 负债明细（多平台：花呗 / 信用卡 / 抖音月付…）</div>
+        <div class="debt-add">
+          <select id="debtName" onchange="if(this.value==='__other__'){$('#debtNameCustom').style.display='inline-block';$('#debtNameCustom').focus()}else{$('#debtNameCustom').style.display='none'}">
+            <option value="" disabled selected>选择负债平台</option>
+            <option>花呗</option>
+            <option>信用卡</option>
+            <option>抖音月付</option>
+            <option value="__other__">其他</option>
+          </select>
+          <input type="text" id="debtNameCustom" placeholder="填写其他名称" style="display:none">
+          <input type="number" id="debtAmt" placeholder="金额 ¥">
+          <input type="text" id="debtNote" placeholder="备注（选填）">
+          <button class="btn-p" onclick="addDebt()">添加</button>
+        </div>
+        <div id="debtList" class="rec-list"></div>
+        <div class="debt-total">总负债：¥<span id="debtTotal">0</span></div>
+        <div class="hint">💡 优先偿还高息负债（信用卡分期、网贷），再还低息/免息的；<b>净资产 = 总资产 − 总负债</b>。</div>
       </div>
       <div class="card">
         <div class="card-h">📊 统计图表</div>
@@ -448,6 +467,10 @@
         <div class="card-h">📡 财经 & 政策 & 知识</div>
         <div id="newsFeed" class="news-feed"></div>
         <div class="hint">行情每5分钟自动刷新（需联网）。知识卡片点击展开详细解释。</div>
+      </div>
+      <div class="card">
+        <div class="card-h">🔥 每日各平台热门梗（不懂的我来解释）</div>
+        <div id="trendingFeed" class="trending-feed"></div>
       </div>
     </section>
 
@@ -530,21 +553,90 @@
     <!-- 10. 小猫档案 -->
     <section class="module" id="cats">
       <h2 class="mod-title">🐱 小猫档案</h2>
-      <p class="mod-desc">4只猫的资料、健康记录，以及养猫知识推送。</p>
+      <p class="mod-desc">4只猫的资料、驱虫疫苗计划与提醒、养猫知识推送。</p>
       <div class="cat-grid" id="catGrid"></div>
       <div class="card">
-        <div class="card-h">🩺 健康事件记录</div>
-        <div class="form-row">
-          <label>猫咪<select id="catEventName"></select></label>
-          <label>日期<input type="date" id="catEventDate"></label>
-          <label>事件<input type="text" id="catEventDesc" placeholder="驱虫/疫苗/异常..."></label>
-        </div>
-        <button class="btn-p mt8" onclick="saveCatEvent()">保存</button>
-        <div id="catEventList" class="rec-list"></div>
+        <details class="cat-guide" open>
+          <summary>💡 驱虫疫苗科学指南（点击展开/收起）</summary>
+          <div class="guide-body">
+            <p><b>体外驱虫：</b>低风险室内猫一般 1–3 个月一次；CAPC（Companion Animal Parasite Council）建议全年无休预防（春夏高发可每月，冬季可视情况延长）。</p>
+            <p><b>体内驱虫：</b>室内猫通常 3–6 个月一次；完全不出门、环境干净可 6–12 个月一次；最终以主治兽医医嘱为准。</p>
+            <p><b>常见内外同驱药局限：</b>大宠爱（Revolution）不驱绦虫、不驱蜱虫；爱沃克（Advocate）不驱蜱虫、不驱绦虫。建议“体内 + 体外”组合使用，不要只靠一支。</p>
+            <p><b>疫苗：</b>FVRCP（猫三联，核心疫苗）完成基础免疫后，1 岁加强一次，之后室内猫每 3 年一次；狂犬疫苗按疫苗类型与当地规定，通常 1–3 年，常见每年一次。</p>
+            <p class="guide-src">科学来源：AAHA/AAFP Feline Vaccination Guidelines 2020 · CAPC（Companion Animal Parasite Council）指南 · WSAVA Vaccination Guidelines · Cornell Feline Health Center</p>
+          </div>
+        </details>
       </div>
       <div class="card">
-        <div class="card-h">📚 养猫小知识</div>
-        <div id="catKnowledge" class="cat-knowledge"></div>
+        <div class="card-h">📅 年度驱虫疫苗计划表（自动推算未来 12 个月）</div>
+        <div id="catPlanTable"></div>
+        <div class="hint">说明：下次日期 = 最近一次打卡日期 + 频率；若从未打卡则从出生日期起算。逾期 / 7 天内标红。</div>
+      </div>
+      <div class="card">
+        <div class="card-h">🔔 手机提醒（倒计时 & .ics 日历）</div>
+        <div id="catReminder"></div>
+        <button class="btn-p mt8" onclick="genHealthICS()">📲 生成 .ics 日历提醒（导入手机当闹钟）</button>
+      </div>
+      <div class="card">
+        <div class="card-h">✅ 驱虫疫苗打卡 <span class="hint">可多选猫，一次批量记录</span></div>
+        <div class="form-row">
+          <div class="cat-health-box">
+            <div class="cat-health-label">猫咪（多选）</div>
+            <div id="catHealthCats" class="cat-health-cats"></div>
+            <div class="cat-health-btns"><button type="button" class="btn-s" onclick="toggleHealthCats(true)">全选</button><button type="button" class="btn-s" onclick="toggleHealthCats(false)">清空</button></div>
+          </div>
+          <label>日期<input type="date" id="catHealthDate"></label>
+          <label>项目<select id="catHealthType" onchange="onCatHealthTypeChange()"><option>体外驱虫</option><option>体内驱虫</option><option>FVRCP加强针</option><option>狂犬疫苗</option><option>其他</option></select></label>
+          <label>快捷方案<select id="catHealthCombo" onchange="onCatHealthComboChange()"><option value="">手动填写</option></select></label>
+          <label>备注<input type="text" id="catHealthDesc" placeholder="药品/批号/反应..."></label>
+        </div>
+        <button class="btn-p mt8" onclick="saveCatHealth()">保存打卡</button>
+        <div id="catHealthList" class="rec-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">⚖️ 体重记录与趋势 <span class="hint">妞妞已逝，不参与记录</span></div>
+        <div class="form-row">
+          <label>猫咪<select id="catWeightCat"></select></label>
+          <label>日期<input type="date" id="catWeightDate"></label>
+          <label>体重(kg)<input type="number" id="catWeightKg" step="0.01" min="0" placeholder="如 4.2"></label>
+          <button class="btn-p" onclick="addCatWeight()">记录</button>
+        </div>
+        <div class="chart-box"><canvas id="catWeightChart"></canvas></div>
+        <div id="catWeightList" class="rec-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">📖 今日养宠小知识 <span class="hint">每日自动更新</span></div>
+        <div id="catTip" class="cat-tip"></div>
+        <details class="cat-guide">
+          <summary>📚 查看全部养宠小知识（共 <span id="catTipCount"></span> 条）</summary>
+          <div id="catTipAll" class="cat-knowledge"></div>
+        </details>
+      </div>
+      <div class="card">
+        <div class="card-h">🩺 猫病症状速查库 <span class="hint">来自你的猫病手册，可搜索</span></div>
+        <input type="text" id="kbSearch" placeholder="搜索症状 / 食物 / 项目…" oninput="renderCatKB()" style="margin-bottom:8px;width:100%">
+        <div id="catKB"></div>
+      </div>
+    </section>
+
+    <!-- 10.5 仓库管理 -->
+    <section class="module" id="stock">
+      <h2 class="mod-title">📦 仓库管理</h2>
+      <p class="mod-desc">记录你买的所有东西（产品 / 生产日期 / 保质期 / 放置地点），提醒今年和最先过期的，别再让囤货悄悄放过期。</p>
+      <div class="card">
+        <div class="card-h">➕ 添加入库</div>
+        <div class="form-row">
+          <label>产品名称<input type="text" id="invName" placeholder="如 防晒霜 / 维C / 猫粮"></label>
+          <label>生产日期<input type="date" id="invProd"></label>
+          <label>保质期/过期日<input type="date" id="invExp"></label>
+          <label>放置地点<input type="text" id="invLoc" placeholder="如 卧室柜子/冰箱/猫柜"></label>
+        </div>
+        <label class="blk">备注<input type="text" id="invNote" placeholder="规格/数量/开封日期…"></label>
+        <button class="btn-p mt8" onclick="addItem()">入库</button>
+      </div>
+      <div class="card">
+        <div class="card-h">🔔 过期提醒</div>
+        <div id="invList"></div>
       </div>
     </section>
 
@@ -553,8 +645,14 @@
       <h2 class="mod-title">💄 美妆学习 · 干货教程索引</h2>
       <p class="mod-desc">整合姜乘澜、金大迪、莽歌歌、一枝楠楠、米米克及圆脸博主的思路与教程。</p>
       <div class="card">
-        <div class="card-h">🎬 教程视频索引</div>
-        <div id="beautyList" class="video-list"></div>
+        <div class="card-h">💄 我喜欢的美妆博主（点击直达 · 可自定义）</div>
+        <div id="beautyList" class="blogger-list"></div>
+        <div class="blogger-add">
+          <input type="text" id="beautyBloggerName" placeholder="博主名称">
+          <input type="text" id="beautyBloggerUrl" placeholder="主页链接（B站/小红书/抖音等）">
+          <input type="text" id="beautyBloggerTag" placeholder="标签，如 底妆/通勤">
+          <button class="btn-p" onclick="addBlogger('beauty')">添加博主</button>
+        </div>
       </div>
     </section>
 
@@ -580,8 +678,14 @@
         <div style="font-size:11px;color:var(--sub);margin-top:6px">示意图为按梨型身材生成的真实穿搭参考图，具体单品以下方博主实拍为准。</div>
       </div>
       <div class="card">
-        <div class="card-h">👩‍🎤 推荐穿搭博主（点击直达B站）</div>
-        <div id="outfitBloggers" class="outfit-bloggers"></div>
+        <div class="card-h">👩‍🎤 我喜欢的穿搭博主（点击直达 · 可自定义）</div>
+        <div id="outfitBloggers" class="blogger-list"></div>
+        <div class="blogger-add">
+          <input type="text" id="outfitBloggerName" placeholder="博主名称">
+          <input type="text" id="outfitBloggerUrl" placeholder="主页链接（B站/小红书/抖音等）">
+          <input type="text" id="outfitBloggerTag" placeholder="标签，如 梨型/通勤">
+          <button class="btn-p" onclick="addBlogger('outfit')">添加博主</button>
+        </div>
       </div>
       <div class="card">
         <div class="card-h">📌 梨型身材穿搭法则</div>
@@ -594,21 +698,29 @@
       </div>
     </section>
 
-    <!-- 13. 抖音话题 -->
-    <section class="module" id="douyin">
-      <h2 class="mod-title">📷 抖音话题 · 热门梗 & 灵感库</h2>
-      <p class="mod-desc">每天帮你盘点各平台高赞/火的梗和话题，不知道的梗我顺手解释；下面的灵感库你想到什么随时写进去。</p>
+    <!-- 13. 灵感收纳箱 -->
+    <section class="module" id="inspire">
+      <h2 class="mod-title">💡 灵感收纳箱 · 刷到就甩进来</h2>
+      <p class="mod-desc">抖音、小红书、B站刷到的好东西（影视/书/动漫/句子/调酒/旅游/美食/社保医保/金融经济…），直接复制粘贴丢进来，我帮你分类存好，有空再慢慢看、慢慢做。</p>
       <div class="card">
-        <div class="card-h">🔥 每日各平台热门梗（不懂的我来解释）</div>
-        <div id="trendingFeed" class="trending-feed"></div>
+        <div class="card-h">📥 随手丢一条</div>
+        <div class="inspire-dump">
+          <textarea id="inspireDump" placeholder="直接粘贴：链接、标题、文案、博主名字…&#10;例：B站@电影最TOP 解说《肖申克的救赎》 https://b23.tv/xxx&#10;例：小红书 贵州遵义美食 虾酸牛肉 老谢家&#10;例：一句让人觉醒的话：……" rows="3" oninput="onInspireDumpInput()"></textarea>
+          <div class="form-row">
+            <label>标题<input type="text" id="inspireTitle" placeholder="自动识别，也可手动改"></label>
+            <label>来源链接<input type="text" id="inspireUrl" placeholder="自动提取链接"></label>
+            <label>分类<select id="inspireCat"><option>影视</option><option>书</option><option>动漫</option><option>句子</option><option>调酒</option><option>旅游</option><option>美食</option><option>社保医保</option><option>金融经济</option><option>其他</option></select></label>
+          </div>
+          <div class="form-row">
+            <label style="flex:1">标签（用空格分）<input type="text" id="inspireTags" placeholder="悬疑 高分 待看"></label>
+            <button class="btn-p" onclick="addInspiration()">丢进箱子</button>
+          </div>
+        </div>
       </div>
       <div class="card">
-        <div class="card-h">💡 选题灵感库（你自己写）</div>
-        <div id="douyinTopics" class="douyin-topics"></div>
-        <div class="todo-add mt8">
-          <input type="text" id="dyInput" placeholder="自己加一个选题/文案..." onkeydown="if(event.key==='Enter')addDouyin()">
-          <button class="btn-p" onclick="addDouyin()">添加</button>
-        </div>
+        <div class="card-h">🗂️ 我的收藏 <span id="inspireCount" class="hint">0 条</span></div>
+        <div class="inspire-filter" id="inspireFilter"></div>
+        <div class="inspire-list" id="inspireList"></div>
       </div>
     </section>
 
@@ -689,12 +801,8 @@
   </div>
 </div>
 
-<!-- 番茄钟提示音 -->
-<audio id="pomoAudio" preload="auto">
-  <source src="data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav">
-</audio>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="cat_kb_data.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -44,6 +44,11 @@ label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--sub)
 .card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
 .card-h{font-size:15px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .card-h .mini-btn,.card-h button.mini-btn{margin-left:auto;background:var(--orange-l);border:none;color:var(--orange-d);border-radius:8px;padding:2px 8px;font-size:12px}
+/* 可折叠卡片 */
+.card.collapsible-ready .card-h{cursor:pointer;user-select:none}
+.card.collapsible-ready .card-toggle{margin-left:auto;color:var(--sub);font-size:13px;transition:.15s;padding-left:8px}
+.card.collapsible-ready .card-h:hover .card-toggle{color:var(--orange-d)}
+.card.collapsed .collapsible-body{display:none}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .grid-2 .card{margin-bottom:0}
 .hint{font-size:12px;color:var(--sub)}
@@ -67,13 +72,6 @@ label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--sub)
 .todo-list input[type=checkbox]{width:20px;height:20px;accent-color:var(--orange)}
 .todo-del{color:#ddd;border:none;background:none;font-size:18px}
 .todo-del:hover{color:var(--orange-d)}
-
-/* 番茄钟 */
-.pomo{text-align:center;padding:8px 0}
-.pomo-time{font-size:46px;font-weight:800;color:var(--orange-d);font-variant-numeric:tabular-nums}
-.pomo-mode{font-size:14px;color:var(--sub);margin-bottom:10px}
-.pomo-btns{display:flex;gap:10px;justify-content:center}
-.pomo-count{font-size:12px;color:var(--sub);margin-top:10px}
 
 /* 保健品 */
 .supp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
@@ -243,13 +241,6 @@ label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--sub)
 .rec-btn.done{background:var(--orange-l);color:var(--orange-d)}
 .rec-btn.done.on{background:var(--orange);color:#fff}
 .rec-btn.skip{background:#f0f0f0;color:#888}
-/* 运动视频：封面懒加载，点击才播，同时只一个 */
-.v-cover{position:relative;cursor:pointer;background:linear-gradient(135deg,#2b2b3a,#15151f);color:#fff;aspect-ratio:16/9;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden}
-.v-cover .v-play{font-size:30px;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;margin-bottom:6px}
-.v-cover .v-cover-t{font-size:13px;font-weight:700;padding:0 12px;line-height:1.3}
-.v-cover .v-cover-hint{font-size:10px;opacity:.65;margin-top:6px;padding:0 12px}
-.v-cover.playing{padding:0}
-.v-cover.playing iframe{width:100%;height:100%;border:0;display:block;aspect-ratio:16/9}
 /* 早睡自适应目标 */
 .sleep-goal-big{font-size:18px;padding:4px 0 2px;color:var(--orange-d);font-weight:800}
 .sleep-goal-sub{font-size:12px;color:var(--sub);margin-bottom:6px}
@@ -308,10 +299,6 @@ label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--sub)
 .cat-card .cat-info{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.6}
 .cat-knowledge{display:flex;flex-direction:column;gap:8px}
 .ck-item{background:var(--teal-l);border-radius:10px;padding:10px 12px;font-size:13px}
-.douyin-topics{display:flex;flex-direction:column;gap:8px}
-.dy-item{display:flex;gap:8px;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;font-size:13px}
-.dy-item .dy-del{margin-left:auto;color:#ddd;border:none;background:none}
-
 /* 每周数据 */
 .weekly-summary{margin-bottom:6px}
 .ws-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
@@ -415,36 +402,53 @@ label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--sub)
 .todo-masters .tm-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:3px 8px;margin:0 4px 4px 0}
 .todo-masters button{background:none;border:none;color:var(--orange-d);font-size:14px;cursor:pointer}
 
-/* 番茄钟切换 */
-.pomo-tabs{display:flex;gap:8px;margin-bottom:12px}
-.pomo-tab{flex:1;padding:8px 0;border:1.5px solid var(--border);border-radius:12px;background:#fff;color:var(--sub);font-size:13px;font-weight:600}
-.pomo-tab.active{background:var(--orange);color:#fff;border-color:var(--orange)}
-.pomo-mode-panel{display:none}
-.pomo-mode-panel.active{display:block}
+/* 保健品分区 & 泡茶 */
+.supp-area{margin-bottom:12px}
+.supp-area-t{font-size:13px;font-weight:700;color:var(--teal);margin-bottom:6px}
+.supp-add{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px;align-items:center}
+.supp-add input[type=text]{flex:1;min-width:160px}
+.supp-add select{padding:6px 8px;border:1.5px solid var(--border);border-radius:10px;background:#fff}
+/* 近14天打卡记录 */
+.sh-details summary{list-style:none}
+.sh-details summary::-webkit-details-marker{display:none}
+.sh-summary{display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:15px;font-weight:700;gap:8px}
+.sh-stat{margin-left:auto;font-size:12px;color:var(--sub);font-weight:400}
+.sh-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:10px}
+.sh-weekdays{grid-column:1/-1;display:grid;grid-template-columns:repeat(7,1fr);gap:8px;text-align:center;font-size:12px;color:var(--sub);padding-bottom:4px;border-bottom:1px dashed var(--border);margin-bottom:-2px}
+.sh-cell{border:1.5px solid var(--border);border-radius:10px;padding:6px;min-height:68px;background:#fff}
+.sh-cell.sh-today{border-color:var(--orange);background:var(--orange-l)}
+.sh-cell.sh-empty{background:transparent;border-style:dashed;opacity:.75}
+.sh-cell-d{font-size:11px;color:var(--sub);margin-bottom:4px;text-align:center}
+.sh-cell-items{display:flex;flex-wrap:wrap;gap:3px;align-content:flex-start}
+.sh-badge{font-size:10px;padding:2px 6px;border-radius:8px;background:var(--teal-l);color:var(--teal);border:1px solid var(--teal);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.sh-badge.t{background:#fdeaf3;color:#c0508a;border-color:#e7a9c8}
 
-/* 音乐番茄 */
-.music-player{padding:4px 0}
-.music-now{display:flex;align-items:center;gap:14px;margin-bottom:12px;background:linear-gradient(135deg,var(--orange-l),#fff);border-radius:14px;padding:14px}
-.vinyl{font-size:46px;animation:none;flex-shrink:0}
-.vinyl.spin{animation:spin 3s linear infinite}
-@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-.now-info{flex:1;min-width:0}
-.now-title{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.now-artist{font-size:12px;color:var(--sub);margin:2px 0 6px}
-.now-bar{height:6px;background:#fff;border-radius:3px;overflow:hidden;margin-bottom:4px}
-.now-progress{height:100%;background:var(--orange);border-radius:3px;transition:width .3s}
-.now-time{font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums}
-.music-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-.music-controls .chk{font-size:12px;margin-left:auto}
-.music-count{font-size:12px;color:var(--sub);margin-bottom:10px}
-.music-list{max-height:210px;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
-.music-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1.5px solid var(--border);border-radius:12px;background:#fff;cursor:pointer}
-.music-item.playing{border-color:var(--orange);background:var(--orange-l)}
-.mi-num{font-size:11px;color:var(--sub);width:20px}
-.mi-info{flex:1;min-width:0}
-.mi-title{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mi-artist{font-size:11px;color:var(--sub)}
-.mi-link{font-size:16px;text-decoration:none;flex-shrink:0}
+/* 小猫档案：指南/计划/提醒 */
+.cat-guide{background:var(--orange-l);border:1.5px solid var(--orange);border-radius:14px;padding:6px 12px;margin-bottom:14px}
+.cat-guide summary{cursor:pointer;font-weight:700;color:var(--orange-d)}
+.guide-body{padding:8px 2px 2px;font-size:13px;line-height:1.7}
+.guide-body p{margin:6px 0}
+.guide-src{font-size:11px;color:var(--sub);margin-top:8px;border-top:1px dashed var(--border);padding-top:6px}
+.plan-cat{border:1.5px solid var(--border);border-radius:12px;padding:10px;margin-bottom:10px;background:#fff}
+.plan-cat-name{font-weight:800;margin-bottom:6px}
+.plan-row{display:flex;align-items:center;gap:10px;font-size:13px;padding:4px 0;border-bottom:1px dashed var(--border)}
+.plan-row:last-child{border-bottom:none}
+.plan-type{flex:1}
+.plan-date{font-variant-numeric:tabular-nums;color:var(--sub)}
+.plan-days{font-size:12px;min-width:84px;text-align:right;color:var(--teal)}
+.plan-row.ph-soon .plan-days{color:#d98300;font-weight:700}
+.plan-row.ph-overdue{background:#fdeaea}
+.plan-row.ph-overdue .plan-days{color:#d9534f;font-weight:700}
+.reminder-big{font-size:15px;font-weight:800;padding:10px 12px;border-radius:12px;background:var(--teal-l);color:var(--teal);margin-bottom:6px}
+.reminder-big.ph-soon{background:#fff3e0;color:#d98300}
+.reminder-big.ph-overdue{background:#fdeaea;color:#d9534f}
+.reminder-sub{font-size:12px;color:var(--sub)}
+
+/* 负债明细 */
+.debt-add{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.debt-add input[type=text],.debt-add input[type=number]{flex:1;min-width:120px;padding:7px 9px;border:1.5px solid var(--border);border-radius:10px;background:#fff}
+.debt-total{font-weight:800;margin-top:8px;font-size:15px;color:#d9534f}
+.debt-total span{font-variant-numeric:tabular-nums}
 
 /* 猫咪头像图片 */
 .cat-ava-img{width:62px;height:62px;object-fit:cover;border-radius:50%;background:var(--orange-l)}
@@ -509,3 +513,122 @@ label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--sub)
 .trend-top{display:flex;align-items:center;gap:8px;font-size:13.5px}
 .trend-plat{font-size:10px;background:var(--pink);color:#fff;border-radius:6px;padding:1px 6px;flex-shrink:0}
 .trend-d{font-size:12.5px;color:var(--text);line-height:1.65;margin-top:4px}
+
+/* ===== 猫咪体重 / 知识库 / 仓库管理 ===== */
+.blk{display:block;margin-top:8px;font-size:13px;color:var(--text-2)}
+.blk input{width:100%;margin-top:4px}
+.cat-tip{margin-bottom:6px}
+.kb-sec{margin-bottom:14px}
+.kb-sec-h{font-weight:800;color:var(--orange-d);margin:6px 0 6px;font-size:14px}
+.kb-tb{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;border-radius:8px;overflow:hidden}
+.kb-tb th{background:var(--orange-l);color:var(--orange-d);text-align:left;padding:6px 8px;font-weight:700;border-bottom:1.5px solid var(--orange)}
+.kb-tb td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.5}
+.kb-tb tr:last-child td{border-bottom:none}
+.inv-warn{background:#fff3e0;border:2px solid #ff9800;border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:10px}
+.inv-warn.inv-soon{background:#fff3e0;border-color:#ff9800}
+.inv-warn.inv-overdue{background:#fdecea;border-color:#e53935;animation:pulseWarn 1.4s infinite}
+@keyframes pulseWarn{0%,100%{box-shadow:0 0 0 0 rgba(229,57,53,.35)}50%{box-shadow:0 0 0 6px rgba(229,57,53,0)}}
+.inv-sub{font-weight:700;color:var(--text-2);margin:12px 0 8px;font-size:13.5px}
+.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.inv-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:10px 12px}
+.inv-card.inv-soon{border-color:#ff9800;background:#fff8ee}
+.inv-card.inv-overdue{border-color:#e53935;background:#fdecea}
+.inv-name{font-weight:800;font-size:14px}
+.inv-meta{font-size:12px;color:var(--text-2);margin-top:3px}
+.inv-days{font-size:12.5px;font-weight:700;margin-top:6px;color:#ff9800}
+.inv-card.inv-overdue .inv-days{color:#e53935}
+.rec-item.inv-soon{background:#fff8ee}
+.rec-item.inv-overdue{background:#fdecea;border-color:#e53935}
+
+/* ===== V4.9 新增：茶单管理 / 体重单位 / 数据分析卡片 / 博主自定义 ===== */
+
+/* 泡茶管理 */
+.tea-manager{margin-top:10px;border:1.5px solid var(--border);border-radius:12px;background:#fff;overflow:hidden}
+.tea-manager summary{padding:10px 12px;font-size:13px;font-weight:700;color:var(--orange-d);cursor:pointer;background:var(--orange-l);list-style:none}
+.tea-manager summary::-webkit-details-marker{display:none}
+.tea-manager[open] summary{border-bottom:1.5px solid var(--border)}
+.tm-body{padding:12px}
+.tm-h{font-size:12px;font-weight:700;color:var(--sub);margin:10px 0 6px}
+.tm-h:first-child{margin-top:0}
+.tm-favs{display:flex;flex-wrap:wrap;gap:8px}
+.tm-fav{display:flex;align-items:center;gap:6px;background:var(--orange-l);border:1.5px solid var(--border);border-radius:20px;padding:5px 5px 5px 12px;font-size:13px}
+.tm-fav .tm-tag{font-size:10px;color:var(--sub);margin-left:4px;background:#fff;border-radius:8px;padding:1px 5px}
+.tm-fav button{background:#fff;border:1.5px solid var(--border);border-radius:8px;width:24px;height:24px;font-size:12px;color:var(--text);line-height:1}
+.tm-fav button.tm-del{color:#e53935;border-color:#f5b7b1}
+.tm-add{display:flex;gap:8px;margin:8px 0 12px;align-items:center}
+.tm-add input{flex:1;min-width:120px}
+.tm-add button{flex-shrink:0}
+.tm-presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;max-height:260px;overflow-y:auto;padding-right:4px}
+.tm-pre{display:flex;align-items:center;gap:6px;font-size:12.5px;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:7px 9px;cursor:pointer}
+.tm-pre input{width:16px;height:16px;accent-color:var(--orange);flex-shrink:0}
+
+/* 体重单位预览 */
+.weight-preview{font-size:13px;color:var(--sub);white-space:nowrap;padding-bottom:9px}
+.weight-preview b{color:var(--orange-d)}
+
+/* 数据分析卡片 */
+.bsa-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px}
+.bsa-card{background:var(--orange-l);border-radius:12px;padding:12px;text-align:center}
+.bsa-label{font-size:11px;color:var(--sub);margin-bottom:4px}
+.bsa-v{font-size:22px;font-weight:800;color:var(--text)}
+.bsa-v small{font-size:12px;font-weight:600;color:var(--sub);margin-left:2px}
+.bsa-d{font-size:12px;margin-top:3px}
+.bsa-d.good{color:#27ae60}
+.bsa-d.warn{color:#e17055}
+.bsa-bar{height:6px;background:#ffe0c2;border-radius:4px;margin:8px 0 4px;overflow:hidden}
+.bsa-bar>div{height:100%;background:var(--orange);border-radius:4px;transition:width .4s}
+.bsa-m{font-size:13px;margin:2px 0}
+.bsa-m small{color:var(--sub);margin-left:2px}
+.bsa-tip{font-size:11px;color:var(--sub)}
+.bsa-detail{margin-top:10px;border:1.5px solid var(--border);border-radius:10px;background:#fff;overflow:hidden}
+.bsa-detail summary{padding:9px 12px;font-size:13px;font-weight:700;color:var(--orange-d);cursor:pointer;background:var(--orange-l);list-style:none}
+.bsa-detail summary::-webkit-details-marker{display:none}
+.bsa-detail[open] summary{border-bottom:1.5px solid var(--border)}
+.bsa-detail p{padding:10px 12px 0;font-size:12.5px;line-height:1.7;color:var(--text)}
+.bsa-detail p:last-child{padding-bottom:12px}
+
+/* 猫咪健康批量选择 */
+.cat-health-box{display:flex;flex-direction:column;gap:6px;min-width:180px}
+.cat-health-label{font-size:12px;color:var(--sub)}
+.cat-health-cats{display:flex;flex-wrap:wrap;gap:8px}
+.cat-health-cats .chk{flex-direction:row;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:7px 10px;font-size:13px}
+.cat-health-btns{display:flex;gap:6px;margin-top:2px}
+.cat-health-btns button{padding:4px 10px;font-size:12px}
+
+/* 博主卡片自定义 */
+.blogger-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:12px}
+.bg-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;justify-content:space-between;gap:8px}
+.bg-main{display:flex;flex-direction:column;gap:4px}
+.bg-tag{font-size:10px;background:var(--orange-l);color:var(--orange-d);border-radius:8px;padding:1px 7px;align-self:flex-start}
+.bg-name{font-size:14px;font-weight:700;color:var(--text);line-height:1.4}
+.bg-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.bg-actions button{background:#fff;border:1.5px solid var(--border);border-radius:8px;width:26px;height:26px;font-size:13px;color:var(--text)}
+.bg-actions button.bg-del{color:#e53935;border-color:#f5b7b1}
+.bg-go{font-size:12px;background:var(--orange);color:#fff;border-radius:8px;padding:4px 9px;text-decoration:none;flex:1;text-align:center}
+.blogger-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.blogger-add input{flex:1;min-width:120px}
+.blogger-add input:nth-child(2){flex:2}
+
+/* 驱虫疫苗快捷方案 */
+#catHealthCombo optgroup{font-weight:700;color:var(--text)}
+#catHealthCombo option{font-weight:400}
+
+/* 灵感收纳箱 */
+.inspire-dump{display:flex;flex-direction:column;gap:10px}
+.inspire-dump textarea{width:100%;resize:vertical;border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;font-size:13px;background:#fff}
+.inspire-filter{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.inspire-filter .chip{border:1.5px solid var(--border);background:#fff;border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;color:var(--text)}
+.inspire-filter .chip.on{background:var(--orange);color:#fff;border-color:var(--orange)}
+.inspire-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.inspire-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;transition:.15s}
+.inspire-card.done{opacity:.65;background:#f8f8f8}
+.inspire-h{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.inspire-cat{font-size:11px;background:var(--teal-l);color:var(--teal);border-radius:8px;padding:2px 8px;white-space:nowrap}
+.inspire-title{flex:1;font-size:14px;font-weight:700;color:var(--text);line-height:1.4}
+.inspire-date{font-size:11px;color:var(--sub);white-space:nowrap}
+.inspire-body{font-size:12px;color:#555;line-height:1.5;max-height:120px;overflow:auto}
+.inspire-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.inspire-tag{font-size:10px;background:var(--orange-l);color:var(--orange-d);border-radius:8px;padding:2px 7px}
+.inspire-link{font-size:12px;color:var(--orange);text-decoration:none}
+.inspire-actions{display:flex;gap:8px;margin-top:auto}
+.inspire-actions button{padding:5px 12px;font-size:12px}

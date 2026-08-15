@@ -4,19 +4,32 @@ const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const STORE = 'chengzhangji_v1';
 const SUPPLEMENTS = ['益生菌','优截片+油切饮','美白饮胶原蛋白饮','钙+维D','复合维生素+葡萄籽','优思明'];
+const TEA_PRESETS = ['畅纤青瓜波柠茶','紫苏桃子玄米茶','苹果西梅波波茶','紫苏桃子姜枣茶','七白椰桃茶','桃香金蜜果茶','全维C白白茶','苹果油柑果茶','话梅薄荷青柠茶','话梅菠萝冰茉莉','油柑话梅饮','杏皮话梅茉莉茶','抹茶椰子油柑话梅茶','油柑芭乐饮','苹果山楂菠萝茶','山楂苹果刮油茶','茉莉雪梨','小吊梨汤','竹蔗茅根雪梨水','甘蔗茅根雪梨水','薏米茯苓陈皮水','陈皮四神汤','南瓜消消饮','超模水','苹果黄芪素颜水','苹果姜枣茶','红参麦冬饮','元气四宝茶','桃红八物茶','四物汤','酸枣仁睡眠茶','蒲公英舒郁茶','七白饮','黄菊牛蒡茶','玫茉熬夜茶','人茯琦纤姿茶','平衡体重茶','胖大海金桔茶','经期排瘀茶','润肠通道茶','茯苓黄芪饮','五黑养发茶','玉米须桑叶茶','茉莉雪梨'];
+const DEWORM_COMBOS = [
+  {k:'hai', name:'海乐妙 + 福来恩', inner:'海乐妙', outer:'福来恩', note:'内驱海乐妙 · 外驱福来恩'},
+  {k:'bai', name:'吡喹酮/拜宠清 + 大宠爱/妙宠爱', inner:'吡喹酮或拜宠清', outer:'大宠爱/妙宠爱', note:'内驱吡喹酮/拜宠清 · 外驱大宠爱/妙宠爱'},
+  {k:'fen', name:'芬苯达唑 + 非泼罗尼', inner:'芬苯达唑', outer:'非泼罗尼', note:'内驱芬苯达唑 · 外驱非泼罗尼'}
+];
+const VACCINE_PRESETS = [
+  {k:'fvrp-base', name:'FVRCP 基础免疫（8/11/14 周）', type:'FVRCP加强针', note:'8周第一针，之后21天一针，共3针'},
+  {k:'fvrp-boost', name:'FVRCP 次年加强', type:'FVRCP加强针', note:'1岁2个月次年免疫，之后3年一次或测抗体不够再补'},
+  {k:'rabies', name:'狂犬疫苗', type:'狂犬疫苗', note:'不出门可不打；需打则按疫苗类型 1-3 年'}
+];
+const INSPIRE_CATS = ['影视','书','动漫','句子','调酒','旅游','美食','社保医保','金融经济','其他'];
 const todayStr = () => new Date().toISOString().slice(0,10);
 const wkDays = ['一','二','三','四','五','六','日'];
 
 /* ===== 数据层 ===== */
 function defaultDB(){
   return {
-    todos:[], pomo:{}, supplements:{}, sleep:null, dietWeight:[], measurements:[],
+    todos:[], supplements:{}, teas:{}, customSupplements:[], customTeas:[], teaFavs:['祛湿茶','玫瑰花茶','枸杞红枣','桃红八物茶','其他'], sleep:null, dietWeight:[], measurements:[],
     bodyBaseline:{date:todayStr(), weight:66, waist:82, hip:102, thigh:63},
     bodyTarget:{weight:60},
     aiShangShanye:{startDate:'2026-07-21', records:{}},
     workout:{check:{}}, language:[], finance:[], recurring:[],
-    reading:[], cats:{events:[]}, assets:{cash:0,stocks:0,funds:0,gold:0,savings:0,huabei:0,card:0}, douyin:[], wish:{redeemed:[]},
-    taskMasters:[], musicPomo:{}, pantry:'', customWishes:[], city:'贵阳', views:{}
+    reading:[], cats:{events:[], health:[], weight:{}}, assets:{cash:0,stocks:0,funds:0,gold:0,savings:0}, debts:[], wish:{redeemed:[]},
+    inventory:[], taskMasters:[], pantry:'', customWishes:[], city:'贵阳', views:{},
+    outfitBloggers:null, beautyBloggers:null, inspirations:[]
   };
 }
 let DB = loadDB();
@@ -25,6 +38,35 @@ function loadDB(){
   return defaultDB();
 }
 function saveDB(){ localStorage.setItem(STORE, JSON.stringify(DB)); }
+/* 数据向后兼容：合并旧字段，不删除用户数据 */
+function normalizeDB(){
+  DB.cats=DB.cats||{events:[],health:[]};
+  DB.cats.health=DB.cats.health||[];
+  DB.cats.events=DB.cats.events||[];
+  // 旧版“健康事件记录”迁移到新的 health 打卡（type=其他），保留全部历史
+  if(DB.cats.events.length){
+    DB.cats.events.forEach(e=>{ if(!DB.cats.health.some(h=>h.cat===e.cat&&h.date===e.date&&h.desc===e.desc)) DB.cats.health.push({id:uid(),cat:e.cat,date:e.date,type:'其他',desc:e.desc}); });
+    DB.cats.events=[];
+  }
+  DB.cats.weight=DB.cats.weight||{};
+  DB.inventory=Array.isArray(DB.inventory)?DB.inventory:[];
+  // 茶单兼容：旧 customTeas / 默认茶 统一进 teaFavs
+  if(!Array.isArray(DB.teaFavs)){
+    const oldTeas=['祛湿茶','玫瑰花茶','枸杞红枣','其他'];
+    const customs=Array.isArray(DB.customTeas)?DB.customTeas:[];
+    DB.teaFavs=[...new Set(oldTeas.concat(customs).concat(['桃红八物茶']))];
+  }
+  if(!Array.isArray(DB.customTeas)) DB.customTeas=[];
+  // 博主清单兼容
+  if(!Array.isArray(DB.outfitBloggers)) DB.outfitBloggers=null;
+  if(!Array.isArray(DB.beautyBloggers)) DB.beautyBloggers=null;
+  // 资产负债迁移：旧 assets.huabei / assets.card -> debts 明细
+  DB.assets=DB.assets||{};
+  if(!Array.isArray(DB.debts)) DB.debts=[];
+  ['huabei','card'].forEach(k=>{ const v=DB.assets[k]; if(typeof v==='number' && v>0){ DB.debts.push({id:uid(),name:k==='huabei'?'花呗':'信用卡',amount:v,note:''}); } if(k in DB.assets) delete DB.assets[k]; });
+  if(!Array.isArray(DB.inspirations)) DB.inspirations=[];
+  saveDB();
+}
 
 /* 旧版工作台数据迁移（保留消费/保健品记录） */
 function migrateOld(old){
@@ -65,15 +107,16 @@ function switchTab(tab){
   $$('.bottom-nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   $$('.module').forEach(m=>m.classList.toggle('active',m.id===tab));
   $('#sidebar').classList.remove('open'); $('#sidebarMask').classList.remove('show');
-  if(tab!=='workout') pauseAllWorkoutVideos(); // 离开运动板块，停掉仍在播放的视频/声音
-  if(tab==='plan'){ setTimeout(()=>{renderTodos();renderPomo();renderMusicPomo();},50); }
+  if(tab==='plan'){ setTimeout(()=>{renderTodos();},50); }
   if(tab==='finance'){ setTimeout(()=>{renderFinanceStats();renderFinance();renderAsset();},50); }
-  if(tab==='workout') setTimeout(renderWorkoutToday,50);
+  if(tab==='workout'){ setTimeout(renderWorkoutToday,50); setTimeout(()=>{if(window._bsWeightChart)window._bsWeightChart.resize();if(window._bsMeasChart)window._bsMeasChart.resize();},100); }
+  if(tab==='cats') setTimeout(()=>{if(window._catWChart)window._catWChart.resize();},100);
   if(tab==='news'){ loadMarket(); renderAffairs(); renderKnowledge(); }
   if(tab==='weekly') setTimeout(renderWeekly,50);
   if(tab==='outfit') setTimeout(loadOutfit,50);
   if(tab==='diet') setTimeout(()=>{renderDietDay();renderWeekPlan();},50);
   if(tab==='wish') setTimeout(renderWish,50);
+  if(tab==='inspire') setTimeout(renderInspirations,50);
 }
 $$('#sidebar .nav-btn').forEach(b=> b.onclick=()=>switchTab(b.dataset.tab));
 $('#menuToggle').onclick=()=>{ $('#sidebar').classList.toggle('open'); $('#sidebarMask').classList.toggle('show'); };
@@ -146,8 +189,89 @@ function delTaskMaster(id){
 }
 function toggleTodo(id){ const x=DB.todos.find(t=>t.id===id); if(x){x.done=!x.done; saveDB(); renderTodos();} }
 function delTodo(id){ DB.todos=DB.todos.filter(t=>t.id!==id); saveDB(); renderTodos(); }
-function renderSupp(){ const grid=$('#suppGrid'); const taken=DB.supplements[todayStr()]||[]; grid.innerHTML=SUPPLEMENTS.map(s=>`<label class="supp-item"><input type="checkbox" ${taken.includes(s)?'checked':''} data-supp="${s}"> ${s}</label>`).join(''); }
-function saveSupplements(){ const arr=$$('#suppGrid input[data-supp]').filter(i=>i.checked).map(i=>i.dataset.supp); DB.supplements[todayStr()]=arr; saveDB(); toast('已保存今日保健品：'+ (arr.length?arr.join('、'):'无')); }
+function renderSupp(){
+  const suppTaken=DB.supplements[todayStr()]||[];
+  const teaTaken=DB.teas[todayStr()]||[];
+  const supps=SUPPLEMENTS.concat(DB.customSupplements||[]);
+  let teas=(DB.teaFavs||[]).concat(DB.customTeas||[]).filter((v,i,a)=>a.indexOf(v)===i);
+  teaTaken.forEach(t=>{ if(!teas.includes(t)) teas.push(t); });
+  const sg=$('#suppGrid'); if(sg) sg.innerHTML=supps.map(s=>`<label class="supp-item"><input type="checkbox" ${suppTaken.includes(s)?'checked':''} data-supp="${esc(s)}"> ${esc(s)}</label>`).join('');
+  const tg=$('#teaGrid'); if(tg) tg.innerHTML=teas.map(s=>`<label class="supp-item"><input type="checkbox" ${teaTaken.includes(s)?'checked':''} data-tea="${esc(s)}"> ${esc(s)}</label>`).join('');
+  renderTeaManager();
+  renderSuppHistory();
+}
+function renderTeaManager(){
+  const favBox=$('#teaFavList'), preBox=$('#teaPresetList');
+  if(!favBox || !preBox) return;
+  const favs=DB.teaFavs||[];
+  const customs=DB.customTeas||[];
+  favBox.innerHTML=favs.length?favs.map((name,idx)=>{
+    const isCustom=customs.includes(name);
+    return `<div class="tm-fav"><span class="tm-name">${esc(name)}${isCustom?'<i class="tm-tag">自定义</i>':''}</span><span class="tm-btns"><button onclick="moveTeaFav(${idx},-1)">↑</button><button onclick="moveTeaFav(${idx},1)">↓</button><button class="tm-del" onclick="delTeaItem('${esc(name)}')" title="${isCustom?'彻底删除':'从茶单移除'}">×</button></span></div>`;
+  }).join(''):'<div class="hint">还没选茶，从下方 44 款预设里勾选，或自定义添加</div>';
+  preBox.innerHTML=TEA_PRESETS.map(name=>{
+    const checked=favs.includes(name)?'checked':'';
+    return `<label class="tm-pre"><input type="checkbox" ${checked} onchange="toggleTeaFav('${esc(name)}')"> ${esc(name)}</label>`;
+  }).join('');
+}
+function toggleTeaFav(name){
+  DB.teaFavs=DB.teaFavs||[];
+  const i=DB.teaFavs.indexOf(name);
+  if(i>-1) DB.teaFavs.splice(i,1); else DB.teaFavs.push(name);
+  saveDB(); renderSupp();
+}
+function addCustomTea(){
+  const v=$('#teaCustomInput').value.trim(); if(!v){toast('请填写茶名');return;}
+  DB.customTeas=DB.customTeas||[]; if(!DB.customTeas.includes(v))DB.customTeas.push(v);
+  DB.teaFavs=DB.teaFavs||[]; if(!DB.teaFavs.includes(v))DB.teaFavs.push(v);
+  $('#teaCustomInput').value='';
+  const arr=DB.teas[todayStr()]||[]; if(!arr.includes(v)){ arr.push(v); DB.teas[todayStr()]=arr; }
+  saveDB(); renderSupp(); toast('已添加并勾选：'+v);
+}
+function delTeaItem(name){
+  if((DB.customTeas||[]).includes(name)) DB.customTeas=DB.customTeas.filter(x=>x!==name);
+  DB.teaFavs=(DB.teaFavs||[]).filter(x=>x!==name);
+  saveDB(); renderSupp();
+}
+function moveTeaFav(idx,dir){
+  const arr=DB.teaFavs||[]; const ni=idx+dir;
+  if(ni<0||ni>=arr.length) return;
+  [arr[idx],arr[ni]]=[arr[ni],arr[idx]];
+  saveDB(); renderSupp();
+}
+function saveSupplements(){
+  const supp=$$('#suppGrid input[data-supp]').filter(i=>i.checked).map(i=>i.dataset.supp);
+  const tea=$$('#teaGrid input[data-tea]').filter(i=>i.checked).map(i=>i.dataset.tea);
+  DB.supplements[todayStr()]=supp; DB.teas[todayStr()]=tea;
+  saveDB();
+  toast('已保存今日打卡：保健品 '+(supp.length?supp.join('、'):'无')+' ｜ 泡茶 '+(tea.length?tea.join('、'):'无'));
+}
+function addCustomSupp(){
+  const v=$('#suppCustom').value.trim(); if(!v){toast('请填写名称');return;}
+  const type=$('#suppCustomType').value;
+  if(type==='S'){ DB.customSupplements=DB.customSupplements||[]; if(!DB.customSupplements.includes(v))DB.customSupplements.push(v); const arr=DB.supplements[todayStr()]||[]; if(!arr.includes(v))arr.push(v); DB.supplements[todayStr()]=arr; }
+  else { DB.customTeas=DB.customTeas||[]; if(!DB.customTeas.includes(v))DB.customTeas.push(v); DB.teaFavs=DB.teaFavs||[]; if(!DB.teaFavs.includes(v))DB.teaFavs.push(v); const arr=DB.teas[todayStr()]||[]; if(!arr.includes(v))arr.push(v); DB.teas[todayStr()]=arr; }
+  $('#suppCustom').value=''; saveDB(); renderSupp(); toast('已加入今日打卡 ✓');
+}
+function renderSuppHistory(){
+  const box=$('#suppHistory'); if(!box)return;
+  const statBox=$('#shStat');
+  const days=[];
+  for(let i=13;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(d.toISOString().slice(0,10)); }
+  let totalDays=0,totalSupp=0,totalTea=0,streak=0;
+  for(let i=days.length-1;i>=0;i--){ const d=days[i]; const s=DB.supplements[d]||[]; const t=DB.teas[d]||[]; const has=(s.length+t.length)>0; if(has){ totalDays++; totalSupp+=s.length; totalTea+=t.length; streak++; } else break; }
+  if(statBox) statBox.textContent=`${totalDays} 天打卡 · 连续 ${streak} 天 · 保健 ${totalSupp} · 泡茶 ${totalTea}`;
+  const weekdays=['一','二','三','四','五','六','日'];
+  box.innerHTML=`<div class="sh-weekdays">${weekdays.map(w=>`<span>${w}</span>`).join('')}</div>`+days.map(d=>{
+    const dateObj=new Date(d); const wd=(dateObj.getDay()+6)%7;
+    const s=DB.supplements[d]||[]; const t=DB.teas[d]||[];
+    const isToday=d===todayStr(); const has=(s.length+t.length)>0;
+    const cls='sh-cell'+(isToday?' sh-today':'')+(has?'':' sh-empty');
+    const short=x=>esc(x.length>4?x.slice(0,4)+'…':x);
+    const badges=(s.length?s.map(x=>`<span class="sh-badge s" title="${esc(x)}">${short(x)}</span>`).join(''):'')+(t.length?t.map(x=>`<span class="sh-badge t" title="${esc(x)}">${short(x)}</span>`).join(''):'');
+    return `<div class="${cls}"><div class="sh-cell-d">${d.slice(5)} ${weekdays[wd]}</div><div class="sh-cell-items">${badges||'<span class="hint" style="font-size:11px">—</span>'}</div></div>`;
+  }).join('');
+}
 
 /* 艾上山野三伏贴阶段计划 */
 const AISHANG_PHASES=[
@@ -264,110 +388,9 @@ function renderAishang(){
     : '已进行'+elapsed+'天，App内已打卡'+recorded+'天，继续坚持 💪';
 }
 
-/* 番茄钟 */
-let pomoTimer=null, pomoLeft=25*60, pomoRunning=false, pomoIsBreak=false;
-function fmt(s){ return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
-function renderPomo(){ $('#pomoTime').textContent=fmt(pomoLeft); $('#pomoMode').textContent=pomoIsBreak?'休息':'专注'; $('#pomoDone').textContent=DB.pomo[todayStr()]||0; }
-function togglePomo(){ if(pomoRunning){ clearInterval(pomoTimer); pomoRunning=false; $('#pomoToggle').textContent='继续'; } else { pomoRunning=true; $('#pomoToggle').textContent='暂停'; pomoTimer=setInterval(()=>{ pomoLeft--; if(pomoLeft<=0){ clearInterval(pomoTimer); pomoRunning=false; if(!pomoIsBreak){ DB.pomo[todayStr()]=(DB.pomo[todayStr()]||0)+1; saveDB(); } pomoIsBreak=!pomoIsBreak; pomoLeft=pomoIsBreak?5*60:25*60; $('#pomoToggle').textContent='开始'; toast(pomoIsBreak?'专注完成！休息5分钟':'休息结束，继续专注'); } renderPomo(); },1000); } }
-function resetPomo(){ clearInterval(pomoTimer); pomoRunning=false; pomoIsBreak=false; pomoLeft=25*60; $('#pomoToggle').textContent='开始'; renderPomo(); }
-
-/* ===== 音乐番茄钟 ===== */
-const SONGS=[
-  {t:'Die For You',a:'The Weeknd',sec:240,search:'Die For You The Weeknd'},
-  {t:'Pink + White',a:'Frank Ocean',sec:209,search:'Pink+White Frank Ocean'},
-  {t:'Best Part',a:'Daniel Caesar / H.E.R.',sec:228,search:'Best Part Daniel Caesar'},
-  {t:'Confidently Lost',a:'Mac Ayres',sec:233,search:'Confidently Lost Mac Ayres'},
-  {t:'Get You',a:'Daniel Caesar',sec:269,search:'Get You Daniel Caesar'},
-  {t:'Redbone',a:'Childish Gambino',sec:327,search:'Redbone Childish Gambino'},
-  {t:'晴天',a:'周杰伦',sec:269,search:'晴天 周杰伦'},
-  {t:'江南',a:'林俊杰',sec:277,search:'江南 林俊杰'},
-  {t:'Love Song',a:'方大同',sec:248,search:'Love Song 方大同'},
-  {t:'春风吹',a:'方大同',sec:247,search:'春风吹 方大同'},
-  {t:'普通朋友',a:'陶喆',sec:253,search:'普通朋友 陶喆'},
-  {t:'爱你',a:'陈芳语',sec:227,search:'爱你 陈芳语'},
-  {t:'Sexual Healing',a:'Marvin Gaye',sec:239,search:'Sexual Healing Marvin Gaye'},
-  {t:'September',a:'Earth, Wind & Fire',sec:223,search:'September Earth Wind Fire'},
-  {t:'夜空中最亮的星',a:'逃跑计划',sec:252,search:'夜空中最亮的星 逃跑计划'},
-  {t:'起风了',a:'买辣椒也用券',sec:325,search:'起风了 买辣椒也用券'},
-  {t:'Watermelon Sugar',a:'Harry Styles',sec:174,search:'Watermelon Sugar Harry Styles'},
-  {t:'Levitating',a:'Dua Lipa',sec:203,search:'Levitating Dua Lipa'},
-  {t:'Electric Feel',a:'MGMT',sec:229,search:'Electric Feel MGMT'},
-  {t:'小幸运',a:'田馥甄',sec:255,search:'小幸运 田馥甄'},
-  {t:'如果当时',a:'许嵩',sec:251,search:'如果当时 许嵩'},
-  {t:'倒带',a:'蔡依林',sec:277,search:'倒带 蔡依林'},
-  {t:'Sucker',a:'Jonas Brothers',sec:181,search:'Sucker Jonas Brothers'},
-  {t:'橙月',a:'方大同',sec:240,search:'橙月 方大同'},
-  {t:'Sunflower',a:'Post Malone / Swae Lee',sec:158,search:'Sunflower Post Malone'},
-  {t:'东京漂移',a:'Teriyaki Boyz',sec:186,search:'Tokyo Drift Teriyaki Boyz'},
-  {t:'想你的夜',a:'关喆',sec:288,search:'想你的夜 关喆'},
-  {t:'慢慢喜欢你',a:'莫文蔚',sec:238,search:'慢慢喜欢你 莫文蔚'}
-];
-function openNetease(){ const s=musicTodaySongs[musicIdx]||musicTodaySongs[0]; if(!s){toast('先点歌单选一首');return;} window.open('https://music.163.com/#/search/m/?s='+encodeURIComponent(s.search),'_blank'); }
-let musicTimer=null, musicLeft=0, musicPlaying=false, musicPaused=false, musicIdx=0, musicAutoNext=true, musicTodaySongs=[];
-function dailySongs(){
-  const d=new Date(); const seed=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();
-  const arr=[]; const used=new Set();
-  for(let i=0;i<10;i++){ let idx=(seed+i*13)%SONGS.length; while(used.has(idx))idx=(idx+1)%SONGS.length; used.add(idx); arr.push(SONGS[idx]); }
-  return arr;
-}
-function fmtSong(sec){ return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0'); }
-function switchPomoMode(mode){
-  $$('.pomo-tab').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
-  $$('.pomo-mode-panel').forEach(p=>p.classList.toggle('active',p.id===(mode==='focus'?'focusPomo':'musicPomo')));
-}
-function renderMusicPomo(){
-  if(!musicTodaySongs.length) musicTodaySongs=dailySongs();
-  const list=$('#musicList'); if(!list) return;
-  list.innerHTML=musicTodaySongs.map((s,i)=>`<div class="music-item ${i===musicIdx?'playing':''}" onclick="playMusicSong(${i})"><span class="mi-num">${String(i+1).padStart(2,'0')}</span><span class="mi-info"><div class="mi-title">${esc(s.t)}</div><div class="mi-artist">${esc(s.a)} · ${fmtSong(s.sec)}</div></span><a href="https://music.163.com/#/search/m/?s=${encodeURIComponent(s.search)}" target="_blank" class="mi-link" title="去网易云" onclick="event.stopPropagation()">🎧</a></div>`).join('');
-  const cur=musicTodaySongs[musicIdx];
-  $('#musicNow').innerHTML=cur?`<div class="vinyl ${musicPlaying?'spin':''}">💿</div><div class="now-info"><div class="now-title">${esc(cur.t)}</div><div class="now-artist">${esc(cur.a)}</div><div class="now-bar"><div class="now-progress" style="width:${cur?((cur.sec-musicLeft)/cur.sec*100):0}%"></div></div><div class="now-time">${fmtSong(Math.max(0,musicLeft))} / ${fmtSong(cur.sec)}</div></div>`:'<div class="hint">点击歌单开始听歌番茄 🎵</div>';
-  $('#musicCount').textContent=(DB.musicPomo[todayStr()]||0);
-  $('#musicToggle').textContent=musicPlaying?'暂停':(musicPaused?'继续':'开始');
-  $('#musicToggle').className = musicPlaying?'btn-s':'btn-p';
-  $('#musicAutoNext').checked=musicAutoNext;
-}
-function playMusicSong(idx){
-  if(!musicTodaySongs.length) musicTodaySongs=dailySongs();
-  if(idx<0||idx>=musicTodaySongs.length)return; musicIdx=idx; musicLeft=musicTodaySongs[idx].sec; startMusicPomo();
-}
-function startMusicPomo(){
-  if(!musicTodaySongs.length) musicTodaySongs=dailySongs();
-  clearInterval(musicTimer); musicPlaying=true; musicPaused=false;
-  renderMusicPomo();
-  musicTimer=setInterval(()=>{
-    musicLeft--;
-    if(musicLeft<=0){ completeMusicSong(); }
-    else renderMusicPomo();
-  },1000);
-}
-function pauseMusicPomo(){
-  if(musicPlaying){ clearInterval(musicTimer); musicPlaying=false; musicPaused=true; renderMusicPomo(); return true; }
-  return false;
-}
-function resumeMusicPomo(){ if(musicPaused && musicLeft>0){ startMusicPomo(); } }
-function stopMusicPomo(){ clearInterval(musicTimer); musicPlaying=false; musicPaused=false; musicLeft=0; musicIdx=0; renderMusicPomo(); }
-function toggleMusicPomo(){
-  if(musicPlaying){ pauseMusicPomo(); toast('音乐番茄已暂停'); }
-  else if(musicPaused){ resumeMusicPomo(); }
-  else { playMusicSong(musicIdx||0); toast('开始听歌番茄，一首一首歌做下去～'); }
-}
-function nextMusicSong(){ playMusicSong((musicIdx+1)%musicTodaySongs.length); }
-function prevMusicSong(){ playMusicSong((musicIdx-1+musicTodaySongs.length)%musicTodaySongs.length); }
-function completeMusicSong(){
-  clearInterval(musicTimer); musicPlaying=false; musicPaused=false;
-  DB.musicPomo[todayStr()]=(DB.musicPomo[todayStr()]||0)+1; saveDB();
-  toast(`🎵 听完一首！累计 ${DB.musicPomo[todayStr()]} 个音乐番茄`);
-  if($('#wishBalance'))renderWish();
-  if(musicAutoNext){ setTimeout(()=>nextMusicSong(),1500); }
-  else { musicLeft=0; renderMusicPomo(); }
-}
 
 /* ===== 2. 早睡计划 ===== */
-function currentSleepWeek(){
-  const s=DB.sleep&&DB.sleep.setting; if(!s||!s.startDate) return 1;
-  const start=new Date(s.startDate); const now=new Date();
-  const days=Math.floor((now-start)/86400000); return Math.max(1,Math.floor(days/7)+1);
-}
+function currentSleepWeek(){ return currentSleepWeekFromDate(todayStr()); }
 function renderSleep(){
   const s=DB.sleep&&DB.sleep.setting;
   if(s){ $('#sleepWork').value=s.work; $('#sleepRest').value=s.rest; $('#sleepWake').value=s.wake; }
@@ -389,12 +412,13 @@ function renderSleep(){
   const arr=(DB.sleep&&DB.sleep.weekCheck&&DB.sleep.weekCheck[key])||[];
   const dow=new Date().getDay(); const todayIdx=(dow===0?6:dow-1);
   $('#sleepWeekCheck').innerHTML=wkDays.map((d,i)=>`<div class="wday ${arr[i]?'done':''} ${i===todayIdx?'cur':''}" onclick="toggleSleepDay(${i})"><div class="dname">周${d}</div>${arr[i]?'😴':'○'}</div>`).join('');
-  // 回填今天的入睡记录
-  const rec=DB.sleep&&DB.sleep.records&&DB.sleep.records[todayStr()];
+  // 回填所选“哪一天”的入睡记录（支持补记过去）
+  const recDate=$('#sleepRecordDate')?($('#sleepRecordDate').value||todayStr()):todayStr();
+  const rec=DB.sleep&&DB.sleep.records&&DB.sleep.records[recDate];
   if($('#sleepRecord')) $('#sleepRecord').value=rec||'';
   const recHtml = rec
-    ? `今天已记录：<b>${rec}</b>（目标 ${goalStr}）${bedtimeToMin(rec)<=goal?' ✅ 已达标':' ⚠️ 晚于目标，明天再早一点'}`
-    : '还没记录，睡醒后补记今天的入睡时间也可以。';
+    ? `${recDate} 已记录：<b>${rec}</b>（目标 ${goalStr}）${bedtimeToMin(rec)<=goal?' ✅ 已达标':' ⚠️ 晚于目标，下次再早一点'}`
+    : `${recDate} 还没记录，睡醒后补记（昨天/前几天的也能补）也可以。`;
   if($('#sleepRecordHint')) $('#sleepRecordHint').innerHTML=recHtml;
 }
 function bedtimeToMin(t){ const p=String(t).split(':'); const h=parseInt(p[0],10)||0,m=parseInt(p[1],10)||0; let v=h*60+m; if(h<12)v+=1440; return v; }
@@ -421,17 +445,18 @@ function renderSleepChart(){
   ]},options:{plugins:{legend:{position:'bottom',font:{size:10},labels:{boxWidth:12}}},scales:{y:{ticks:{callback:v=>v==null?'':minToBedtime(v)},suggestedMin:1320,suggestedMax:1560},x:{ticks:{font:{size:10}}}}}});
 }
 function saveSleepRecord(){
-  const v=$('#sleepRecord').value; if(!v){toast('请选择今天的入睡时间');return;}
+  const v=$('#sleepRecord').value; if(!v){toast('请选择入睡时间');return;}
+  const nightDate=$('#sleepRecordDate').value||todayStr();
   DB.sleep=DB.sleep||{}; DB.sleep.records=DB.sleep.records||{};
-  DB.sleep.records[todayStr()]=v;
+  DB.sleep.records[nightDate]=v;
   const goal=adaptiveGoalMin(); const met=bedtimeToMin(v)<=goal;
-  const wk=currentSleepWeek(); const key='W'+new Date().getFullYear()+'-'+wk;
+  const wk=currentSleepWeekFromDate(nightDate); const key='W'+nightDate.slice(0,4)+'-'+wk;
   DB.sleep.weekCheck=DB.sleep.weekCheck||{};
-  const dow=new Date().getDay(); const i=(dow===0?6:dow-1);
+  const dow=new Date(nightDate+'T00:00:00').getDay(); const i=(dow===0?6:dow-1);
   const arr=DB.sleep.weekCheck[key]||[false,false,false,false,false,false,false];
   arr[i]=met; DB.sleep.weekCheck[key]=arr;
   saveDB(); renderSleep();
-  toast(met?`记录成功，已达标 ${v} ✅`:`已记录 ${v}（目标 ${minToBedtime(goal)}，明天再早一点）`);
+  toast(met?`记录成功（${nightDate}），已达标 ${v} ✅`:`已记录 ${nightDate} ${v}（目标 ${minToBedtime(goal)}，下次再早一点）`);
 }
 function saveSleepSetting(){ const s={work:$('#sleepWork').value,rest:$('#sleepRest').value,wake:$('#sleepWake').value,startDate:(DB.sleep&&DB.sleep.setting&&DB.sleep.setting.startDate)||todayStr()}; DB.sleep=DB.sleep||{}; DB.sleep.setting=s; saveDB(); renderSleep(); toast('作息已保存'); }
 function saveReminders(){ DB.sleep=DB.sleep||{}; DB.sleep.remind={wind:$('#remindWind').value,off:$('#remindOff').value,water:$('#remindWater').checked}; saveDB(); toast('提醒已保存'); }
@@ -562,13 +587,41 @@ function renderWeekPlan(){
   $('#weekPlan').innerHTML=html;
 }
 /* ===== 身材数据 & 目标 ===== */
+function detectWeightUnit(val,latestKg){
+  if(val<35) return 'kg';
+  if(val>105) return 'jin';
+  if(!latestKg) return val>80?'jin':'kg';
+  const asKg=val, asJin=val/2;
+  return Math.abs(asKg-latestKg) <= Math.abs(asJin-latestKg) ? 'kg' : 'jin';
+}
+function toKg(val,unit,latestKg){
+  if(unit==='kg') return val;
+  if(unit==='jin') return val/2;
+  return detectWeightUnit(val,latestKg)==='jin' ? val/2 : val;
+}
+function updateWeightPreview(){
+  const input=$('#bsWeightKg'), unitSel=$('#bsWeightUnit'), preview=$('#bsWeightPreview');
+  if(!input || !preview) return;
+  const val=parseFloat(input.value);
+  if(isNaN(val) || !val){ preview.textContent=''; return; }
+  const latest=DB.dietWeight.length? [...DB.dietWeight].sort((a,b)=>a.date.localeCompare(b.date)).slice(-1)[0].kg : (DB.bodyBaseline?DB.bodyBaseline.weight:66);
+  const unit=unitSel?unitSel.value:'auto';
+  const kg=toKg(val,unit,latest);
+  const detected=unit==='auto'?detectWeightUnit(val,latest):unit;
+  preview.innerHTML=`= <b>${kg.toFixed(1)}kg</b>（按${detected==='jin'?'斤':'kg'}换算）`;
+}
 function saveBsWeight(){
   const d=$('#bsWeightDate').value||todayStr();
-  const kg=parseFloat($('#bsWeightKg').value);
-  if(!kg){toast('请输入体重');return;}
+  const raw=parseFloat($('#bsWeightKg').value);
+  if(!raw){toast('请输入体重');return;}
+  const unit=$('#bsWeightUnit')?$('#bsWeightUnit').value:'auto';
+  const latest=DB.dietWeight.length? [...DB.dietWeight].sort((a,b)=>a.date.localeCompare(b.date)).slice(-1)[0].kg : (DB.bodyBaseline?DB.bodyBaseline.weight:66);
+  const kg=toKg(raw,unit,latest);
+  const detected=unit==='auto'?detectWeightUnit(raw,latest):unit;
   DB.dietWeight=DB.dietWeight.filter(x=>x.date!==d);
-  DB.dietWeight.push({date:d,kg,note:$('#bsWeightNote').value||''});
-  saveDB(); renderBodyStats(); toast('体重已记录 ✓');
+  DB.dietWeight.push({date:d,kg,raw,rawUnit:detected,note:$('#bsWeightNote').value||''});
+  $('#bsWeightKg').value=''; $('#bsWeightNote').value='';
+  saveDB(); renderBodyStats(); toast('体重已记录：'+kg.toFixed(1)+'kg ✓');
 }
 function saveMeasurement(){
   const d=$('#bsMeasDate').value||todayStr();
@@ -619,45 +672,55 @@ function renderBodyStats(){
   const progress = b.weight>target ? Math.max(0,Math.min(100,((b.weight-latestW)/(b.weight-target))*100)) : 0;
   const el=$('#bodyStats');
   el.innerHTML = `
-    <div class="bs-grid">
-      <div class="bs-kpi"><span>当前体重</span><b>${latestW}kg</b><i class="${wDelta<=0?'down':'up'}">${wDelta>0?'+':''}${wDelta.toFixed(1)} vs 基线</i></div>
-      <div class="bs-kpi"><span>目标体重</span><b>${target}kg</b><i>还差 ${(latestW-target).toFixed(1)}kg</i></div>
-      <div class="bs-kpi"><span>腰臀比</span><b>${whrC.toFixed(2)}</b><i class="${whrC<whrB?'down':'up'}">${whrC<whrB?'↓改善':'持平'}</i></div>
+    <div class="bsa-grid">
+      <div class="bsa-card">
+        <div class="bsa-label">当前体重</div>
+        <div class="bsa-v">${latestW}<small>kg</small></div>
+        <div class="bsa-d ${wDelta<=0?'good':'warn'}">${wDelta>0?'+':''}${wDelta.toFixed(1)}kg vs 基线</div>
+        <div class="bsa-bar"><div style="width:${progress}%"></div></div>
+        <div class="bsa-tip">距目标 ${(latestW-target).toFixed(1)}kg</div>
+      </div>
+      <div class="bsa-card">
+        <div class="bsa-label">腰臀比</div>
+        <div class="bsa-v">${whrC.toFixed(2)}</div>
+        <div class="bsa-d ${whrC<whrB?'good':'warn'}">${whrC<whrB?'↓ 改善':'→ 持平'}（基线 ${whrB.toFixed(2)}）</div>
+        <div class="bsa-tip">女性参考≈0.85</div>
+      </div>
+      <div class="bsa-card">
+        <div class="bsa-label">三围变化</div>
+        <div class="bsa-m">腰 ${cur.waist-b.waist>0?'+':''}${(cur.waist-b.waist).toFixed(1)}</div>
+        <div class="bsa-m">臀 ${cur.hip-b.hip>0?'+':''}${(cur.hip-b.hip).toFixed(1)}</div>
+        <div class="bsa-m">腿 ${cur.thigh-b.thigh>0?'+':''}${(cur.thigh-b.thigh).toFixed(1)}<small>cm</small></div>
+      </div>
     </div>
-    <div class="bs-prog"><div class="bs-prog-bar" style="width:${progress}%"></div></div>
-    <div class="bs-note">距离目标进度 ${progress.toFixed(0)}%（基线 ${b.weight}kg → 目标 ${target}kg）</div>
+    <details class="bsa-detail">
+      <summary>📖 查看详细健康解读</summary>
+      <p><b>体重：</b>基线 ${b.weight}kg → 最新 ${latestW}kg（${wDelta>0?'增加':'减少'}了 ${Math.abs(wDelta).toFixed(1)}kg）。${progress>0?`已朝目标推进 ${progress.toFixed(0)}%。`:''} 体重与腰围同步下降、臀围/大腿围不大幅缩水，说明在减脂而非单纯掉肌肉。</p>
+      <p><b>腰臀比 WHR：</b>${whrB.toFixed(2)} → ${whrC.toFixed(2)}。腰臀比越低中心性肥胖风险越低（女性健康参考≈0.85，男性≈0.90）；腰围下降说明内脏脂肪在减少。</p>
+      <p><b>建议：</b>继续保持爬坡/有氧 + 充足蛋白质摄入，避免过度节食导致肌肉流失。</p>
+    </details>
+    ${m.length? '<div class="bs-hist"><b>三围记录：</b>'+m.map(x=>`${x.date.slice(5)} 腰${x.waist}/臀${x.hip}/腿${x.thigh}`).join(' · ')+'</div>':''}
     <div class="chart-row">
       <div class="chart-box"><div class="chart-t">体重变化 vs 基线</div><canvas id="bsWeightChart"></canvas></div>
       <div class="chart-box"><div class="chart-t">三围对比（基线 vs 最新）</div><canvas id="bsMeasChart"></canvas></div>
     </div>
-    <div class="bs-analyze">
-      <b>📊 数据分析</b>
-      <ul>
-        <li>体重：基线 ${b.weight}kg → 最新 ${latestW}kg（${wDelta>0?'增加':'减少'}了 ${Math.abs(wDelta).toFixed(1)}kg）。${progress>0?`已朝目标推进 ${progress.toFixed(0)}%`:''}</li>
-        <li>腰臀比 WHR：${whrB.toFixed(2)} → ${whrC.toFixed(2)}。腰臀比越低中心性肥胖风险越低（女性健康参考≈0.85，男性≈0.90）；腰围下降说明内脏脂肪在减少。</li>
-        <li>三围对比基线：腰围 ${cur.waist-b.waist>0?'+':''}${(cur.waist-b.waist).toFixed(1)}cm · 臀围 ${cur.hip-b.hip>0?'+':''}${(cur.hip-b.hip).toFixed(1)}cm · 大腿围 ${cur.thigh-b.thigh>0?'+':''}${(cur.thigh-b.thigh).toFixed(1)}cm。</li>
-        <li>建议：体重与腰围同步下降、臀围/大腿围不大幅缩水，说明在减脂而非单纯掉肌肉，继续保持爬坡 + 充足蛋白质摄入。</li>
-      </ul>
-    </div>
-    ${m.length? '<div class="bs-hist"><b>三围记录：</b>'+m.map(x=>`${x.date.slice(5)} 腰${x.waist}/臀${x.hip}/腿${x.thigh}`).join(' · ')+'</div>':''}
   `;
-  const cv1=$('#bsWeightChart');
-  if(cv1){
-    if(window._bsWeightChart)window._bsWeightChart.destroy();
-    const labels=w.map(x=>x.date.slice(5));
-    window._bsWeightChart=new Chart(cv1,{type:'line',data:{labels:labels.length?labels:['—'],datasets:[
-      {label:'体重kg',data:w.map(x=>x.kg),borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.15)',fill:true,tension:.25},
-      {label:'基线'+b.weight+'kg',data:labels.map(()=>b.weight),borderColor:'#9b8579',borderDash:[6,4],pointRadius:0,fill:false}
-    ]},options:{plugins:{legend:{font:{size:10}}},scales:{y:{suggestedMin:Math.min(b.weight,latestW)-2,suggestedMax:Math.max(b.weight,latestW)+2}}}});
-  }
-  const cv2=$('#bsMeasChart');
-  if(cv2){
-    if(window._bsMeasChart)window._bsMeasChart.destroy();
-    window._bsMeasChart=new Chart(cv2,{type:'bar',data:{labels:['腰围','臀围','大腿围'],datasets:[
-      {label:'基线',data:[b.waist,b.hip,b.thigh],backgroundColor:'#ffd9b3'},
-      {label:'最新',data:[cur.waist,cur.hip,cur.thigh],backgroundColor:'#ff8c42'}
-    ]},options:{plugins:{legend:{font:{size:10}}},scales:{y:{suggestedMin:Math.min(b.waist,b.hip,b.thigh)-5}}}});
-  }
+  requestAnimationFrame(()=>initBodyCharts(w,latestW,b,cur));
+}
+function initBodyCharts(w,latestW,b,cur){
+  const cv1=$('#bsWeightChart'); if(!cv1) return;
+  const labels=w.map(x=>x.date.slice(5));
+  if(window._bsWeightChart)window._bsWeightChart.destroy();
+  window._bsWeightChart=new Chart(cv1,{type:'line',data:{labels:labels.length?labels:['—'],datasets:[
+    {label:'体重kg',data:w.map(x=>x.kg),borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.15)',fill:true,tension:.25},
+    {label:'基线'+b.weight+'kg',data:labels.map(()=>b.weight),borderColor:'#9b8579',borderDash:[6,4],pointRadius:0,fill:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{font:{size:10}}},scales:{y:{suggestedMin:Math.min(b.weight,latestW||b.weight)-2,suggestedMax:Math.max(b.weight,latestW||b.weight)+2}}}});
+  const cv2=$('#bsMeasChart'); if(!cv2) return;
+  if(window._bsMeasChart)window._bsMeasChart.destroy();
+  window._bsMeasChart=new Chart(cv2,{type:'bar',data:{labels:['腰围','臀围','大腿围'],datasets:[
+    {label:'基线',data:[b.waist,b.hip,b.thigh],backgroundColor:'#ffd9b3'},
+    {label:'最新',data:[cur.waist,cur.hip,cur.thigh],backgroundColor:'#ff8c42'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{font:{size:10}}},scales:{y:{suggestedMin:Math.min(b.waist,b.hip,b.thigh)-5}}}});
 }
 
 /* ===== 3.1 实际饮食记录 & 营养分析 ===== */
@@ -775,32 +838,20 @@ const WEEK_PLAN=[
   ['jo姐 踏步燃脂训练','韩小四 瘦腿合集（B站搜索）','Mady Morrison 15分钟全身拉伸']
 ];
 function findVideo(title){ return WORKOUT_VIDEOS.find(v=>v.t===title) || WORKOUT_VIDEOS.find(v=>title.includes(v.trainer)&&title.includes(v.target)) || null; }
-function embedVideo(v){
-  if(v.bvid) return `<div class="v-cover" data-bvid="${esc(v.bvid)}" data-title="${esc(v.t)}" onclick="playWorkoutVideo(this)"><div class="v-play">▶</div><div class="v-cover-t">${esc(v.t)}</div><div class="v-cover-hint">点击播放 · 同时只放一个 · 离开自动停</div></div>`;
-  if(v.search) return `<a href="https://search.bilibili.com/all?keyword=${encodeURIComponent(v.search)}" target="_blank" class="v-note">▶ 在B站打开「${esc(v.search)}」</a>`;
+function workoutLink(it){
+  if(it.bvid) return `<a href="https://www.bilibili.com/video/${esc(it.bvid)}/" target="_blank" class="rec-link">▶ B站直达</a>`;
+  if(it.url) return `<a href="${esc(it.url)}" target="_blank" class="rec-link">▶ 打开视频</a>`;
+  if(it.search) return `<a href="https://search.bilibili.com/all?keyword=${encodeURIComponent(it.search)}" target="_blank" class="rec-link">▶ 在B站搜索「${esc(it.search)}」</a>`;
   return '';
 }
-function playWorkoutVideo(el){
-  if(el.classList.contains('playing')) return;
-  // 同一时间只允许一个视频在播：先停掉其它正在播放的
-  document.querySelectorAll('#workoutRecList .v-cover.playing').forEach(c=>{ if(c!==el) resetWorkoutCover(c); });
-  const bvid=el.getAttribute('data-bvid');
-  el.classList.add('playing');
-  el.innerHTML=`<iframe src="https://player.bilibili.com/player.html?bvid=${bvid}&page=1&high_quality=1&danmaku=0&autoplay=1" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
-}
-function resetWorkoutCover(el){
-  const bvid=el.getAttribute('data-bvid'), title=el.getAttribute('data-title');
-  el.classList.remove('playing');
-  el.innerHTML=`<div class="v-play">▶</div><div class="v-cover-t">${esc(title)}</div><div class="v-cover-hint">点击播放 · 同时只放一个 · 离开自动停</div>`;
-}
-function pauseAllWorkoutVideos(){ document.querySelectorAll('#workoutRecList .v-cover.playing').forEach(c=>resetWorkoutCover(c)); }
 function dayWorkoutDone(title){ const d=todayStr(); const m=(DB.workout.items&&DB.workout.items[d])||{}; return !!m[title]; }
 function renderWorkoutToday(){
   const dow=new Date().getDay(); const idx=(dow===0?6:dow-1);
   const plan=WEEK_PLAN[idx];
   const html=plan.map((t,i)=>{ const v=findVideo(t); const done=dayWorkoutDone(t);
     const ic = i===0 ? (dayWorkoutDone('爬坡走')?'🚶✅':'🚶') : (done?'🎬✅':'🎬');
-    return `<div class="wo-item"><div class="wo-ic">${ic}</div><div class="wo-main"><div class="wo-title">${i===0?'爬坡走（尽量完成，也可能没完成）':esc(t)}</div><div class="wo-sub">${i===0?'坡度12% · 速度4-4.5 · 30分钟 · 边走边听播客':(v?v.note:'')}</div></div>${i===0?`<button class="wo-check ${dayWorkoutDone('爬坡走')?'on':''}" onclick="checkWorkoutItem('爬坡走')">${dayWorkoutDone('爬坡走')?'✓ 已打卡':'✓ 完成打卡'}</button>`:`<button class="wo-check ${done?'on':''}" onclick="checkWorkoutItem('${esc(t)}')">${done?'✓ 已打卡':'✓ 完成打卡'}</button>`}</div>`; }).join('');
+    const link = i===0 ? '' : (v?workoutLink(v):'');
+    return `<div class="wo-item"><div class="wo-ic">${ic}</div><div class="wo-main"><div class="wo-title">${i===0?'爬坡走（尽量完成，也可能没完成）':esc(t)}</div><div class="wo-sub">${i===0?'坡度12% · 速度4-4.5 · 30分钟 · 边走边听播客':(v?v.note:'')}</div>${link}</div>${i===0?`<button class="wo-check ${dayWorkoutDone('爬坡走')?'on':''}" onclick="checkWorkoutItem('爬坡走')">${dayWorkoutDone('爬坡走')?'✓ 已打卡':'✓ 完成打卡'}</button>`:`<button class="wo-check ${done?'on':''}" onclick="checkWorkoutItem('${esc(t)}')">${done?'✓ 已打卡':'✓ 完成打卡'}</button>`}</div>`; }).join('');
   $('#workoutToday').innerHTML=html + `<div style="font-size:12px;color:var(--sub);margin-top:6px">💡 爬坡尽量完成，没完成也没关系；其他训练点「完成打卡」记录。坚持比强度重要。</div>`;
 }
 function checkWorkoutItem(title){ const d=todayStr(); DB.workout.items=DB.workout.items||{}; DB.workout.items[d]=DB.workout.items[d]||{};
@@ -815,7 +866,7 @@ function renderWorkoutRec(){
   box.innerHTML=`<div class="rec-sub">🔥 优先推没练过的 · 练过超${FORGET_DAYS}天复习重推 · 点「完成打卡」记录</div>`+list.map(r=>{
     const it=r.it; const id=recId('workout',it); const done=dayWorkoutDone(it.t);
     const rev=r.review?'<span class="rec-rev">🔁复习</span>':'';
-    return `<div class="rec-card ${r.review?'is-review':''}"><div class="rec-ct"><span class="rec-type">${esc(it.trainer)}·${esc(it.target)}</span>${rev}</div><div class="rec-rt">${esc(it.t)}</div><div class="rec-rn">${esc(it.note)}</div>${embedVideo(it)}<button class="rec-btn done ${done?'on':''}" onclick="checkWorkoutItem('${esc(it.t)}')">${done?'✓ 已打卡':'✓ 完成打卡'}</button></div>`;
+    return `<div class="rec-card ${r.review?'is-review':''}"><div class="rec-ct"><span class="rec-type">${esc(it.trainer)}·${esc(it.target)}</span>${rev}</div><div class="rec-rt">${esc(it.t)}</div><div class="rec-rn">${esc(it.note)}</div>${workoutLink(it)}<button class="rec-btn done ${done?'on':''}" onclick="checkWorkoutItem('${esc(it.t)}')">${done?'✓ 已打卡':'✓ 完成打卡'}</button></div>`;
   }).join('');
 }
 
@@ -877,7 +928,7 @@ function markView(type,id,skip){
   DB.views[id]={ts:Date.now(),skip:!!skip};
   saveDB();
   if(type==='ja'||type==='en') renderLang();
-  if(type==='beauty') renderBeauty();
+  if(type==='beauty') renderBeautyBloggers();
   if(type==='workout') renderWorkoutRec();
   toast(skip?'已标记“不想看”，之后不再推 ✓':'已记录：看过/完成 ✓');
 }
@@ -1034,16 +1085,30 @@ function addRecurring(){ const name=$('#recName').value.trim(); const amt=parseF
 function renderRecurring(){ $('#recurringList').innerHTML=DB.recurring.length?DB.recurring.map((r,i)=>`<div class="rec-item"><span>每月${r.day}号 · ${esc(r.name)} · ¥${r.amt} · ${r.cat}</span><button class="rdel" onclick="delRec(${i})">×</button></div>`).join(''):'<div class="hint">暂无固定账单</div>'; }
 function delRec(i){ DB.recurring.splice(i,1); saveDB(); renderRecurring(); }
 function saveAsset(k,val){ DB.assets[k]=parseFloat(val)||0; saveDB(); renderAsset(); toast('已保存资产'); }
+function addDebt(){
+  const sel=$('#debtName');
+  let name=sel?sel.value.trim():'';
+  if(name==='__other__'){ name=$('#debtNameCustom')?$('#debtNameCustom').value.trim():''; }
+  const amt=parseFloat($('#debtAmt').value);
+  const note=$('#debtNote')?$('#debtNote').value.trim():'';
+  if(!name||!amt){toast('请填写负债名称和金额');return;}
+  DB.debts=DB.debts||[];
+  DB.debts.push({id:uid(),name,amount:amt,note});
+  if(sel){ sel.value=''; }
+  const cus=$('#debtNameCustom'); if(cus){ cus.value=''; cus.style.display='none'; }
+  $('#debtAmt').value='';
+  if($('#debtNote'))$('#debtNote').value='';
+  saveDB(); renderAsset(); toast('已添加负债：'+name);
+}
+function delDebt(id){ DB.debts=DB.debts.filter(x=>x.id!==id); saveDB(); renderAsset(); toast('已删除一笔负债'); }
 function renderAsset(){ const a=DB.assets; const mkt=window._market||{}; const goldVal=(a.gold||0)*(mkt.goldCny||0);
   if($('#assetCash'))$('#assetCash').value=a.cash||0;
   if($('#assetSavings'))$('#assetSavings').value=a.savings||0;
   if($('#assetStocks'))$('#assetStocks').value=a.stocks||0;
   if($('#assetFunds'))$('#assetFunds').value=a.funds||0;
   if($('#assetGold'))$('#assetGold').value=a.gold||0;
-  if($('#assetHuabei'))$('#assetHuabei').value=a.huabei||0;
-  if($('#assetCard'))$('#assetCard').value=a.card||0;
   const total=(a.cash||0)+(a.savings||0)+a.stocks+a.funds+goldVal;
-  const debt=(a.huabei||0)+(a.card||0);
+  const debt=(DB.debts||[]).reduce((s,x)=>s+(x.amount||0),0);
   const net=total-debt;
   $('#assetSummary').innerHTML=`
     <div class="as-item"><div class="v">¥${(a.cash||0).toFixed(0)}</div><div class="l">电子钱包</div></div>
@@ -1052,12 +1117,18 @@ function renderAsset(){ const a=DB.assets; const mkt=window._market||{}; const g
     <div class="as-item"><div class="v">¥${a.funds.toFixed(0)}</div><div class="l">基金(手动)</div></div>
     <div class="as-item"><div class="v">¥${goldVal.toFixed(0)}</div><div class="l">黄金(${(a.gold||0)}g)</div></div>
     <div class="as-item hl"><div class="v">¥${total.toFixed(0)}</div><div class="l">总资产</div></div>
-    <div class="as-item debt"><div class="v">¥${debt.toFixed(0)}</div><div class="l">负债(花呗+卡)</div></div>
+    <div class="as-item debt"><div class="v">¥${debt.toFixed(0)}</div><div class="l">总负债</div></div>
     <div class="as-item net ${net>=0?'pos':'neg'}"><div class="v">¥${net.toFixed(0)}</div><div class="l">净资产</div></div>`;
+  // 负债明细
+  const dl=$('#debtList');
+  if(dl){
+    dl.innerHTML=(DB.debts||[]).length?(DB.debts||[]).map(d=>`<div class="rec-item"><span>${esc(d.name)} ¥${d.amount}${d.note?' · '+esc(d.note):''}</span><button class="rdel" onclick="delDebt('${d.id}')">×</button></div>`).join(''):'<div class="hint">暂无负债记录</div>';
+    if($('#debtTotal'))$('#debtTotal').textContent=debt.toFixed(0);
+  }
   const m=todayStr().slice(0,7); const exp=monthFin(m).filter(x=>x.type==='支出').reduce((s,x)=>s+x.amt,0);
   const deposit=(a.cash||0)+(a.savings||0);
-  let hint='填好上方资产/负债，方便我帮你分析。';
-  if(debt>0){ hint=`💡 当前负债 <b>¥${debt.toFixed(0)}</b>（花呗 ¥${(a.huabei||0).toFixed(0)} + 信用卡 ¥${(a.card||0).toFixed(0)}）。建议每月先还清欠款再消费，逐步戒掉「先花后还」；<b>净资产 = 总资产 − 负债 = ¥${net.toFixed(0)}</b>。`; }
+  let hint='填好上方资产与负债明细，方便我帮你分析。';
+  if(debt>0){ hint=`💡 当前<b>总负债 ¥${debt.toFixed(0)}</b>。建议优先偿还高息负债（如信用卡分期、网贷），再还低息/免息的；每月先还清欠款再消费，逐步戒掉「先花后还」。<b>净资产 = 总资产 − 总负债 = ¥${net.toFixed(0)}</b>。`; }
   else if(exp>0){ const months=deposit/exp; hint=`💡 现有可动用资金约 ¥${deposit.toFixed(0)}，按本月已支出 ¥${exp.toFixed(0)} 估算，可覆盖约 <b>${months.toFixed(1)} 个月</b> 支出。买车前建议先攒到 6 个月备用金。`; }
   else { hint=`💡 现有可动用资金约 ¥${deposit.toFixed(0)}。建议先攒到 6 个月生活备用金，再考虑买车等大支出。`; }
   if($('#assetHint'))$('#assetHint').innerHTML=hint;
@@ -1187,12 +1258,24 @@ function renderReading(){ const wkNum=Math.ceil(dayIndex(todayStr())/7)%4+1;
 function saveReading(){ const type=$('#rdType').value; const title=$('#rdTitle').value.trim(); const score=parseInt($('#rdScore').value)||0; const note=$('#rdNote').value.trim(); if(!title){toast('请填标题');return;} DB.reading.push({type,title,score,note,date:todayStr()}); $('#rdTitle').value=''; $('#rdNote').value=''; saveDB(); renderReading(); toast('已记录'); }
 
 /* ===== 9. 小猫档案 ===== */
+/* 驱虫/疫苗计划：每只猫保留原信息，并新增下次计划日期（默认空，由打卡记录自动推算/展示）
+   dewormIn=体内驱虫 next, dewormOut=体外驱虫 next, fvrcp=FVRCP加强针 next, rabies=狂犬疫苗 next */
 const CATS=[
-  {name:'妞妞',sex:'母',status:'已逝',tag:'🕯️',avatarImg:'icons/cats/niuniu.png',info:'美短虎斑，已绝育。2026-07-03 安乐，约8-9岁。愿在喵星安好。'},
-  {name:'跳跳',sex:'母',status:'在册',tag:'😺',birth:'2023-04-13',avatarImg:'icons/cats/tiaotiao.png',info:'已绝育。狸花猫，2023-05-13 捡回（约1月龄）。现9.2斤。'},
-  {name:'可可',sex:'公',status:'在册',tag:'😼',birth:'2022-08-14',avatarImg:'icons/cats/keke.png',info:'已绝育。重点色布偶，蓝眼睛。8.8斤。'},
-  {name:'金喜',sex:'母',status:'在册',tag:'😺',birth:'2025-08-15',avatarImg:'icons/cats/jinxi.png',info:'已绝育。山猫纹布偶，蓝眼睛。10斤。'}
+  {name:'妞妞',sex:'母',status:'已逝',tag:'🕯️',avatarImg:'icons/cats/niuniu.png',info:'美短虎斑，已绝育。2026-07-03 安乐，约8-9岁。愿在喵星安好。',dewormIn:'',dewormOut:'',fvrcp:'',rabies:''},
+  {name:'跳跳',sex:'母',status:'在册',tag:'😺',birth:'2023-04-13',avatarImg:'icons/cats/tiaotiao.png',info:'已绝育。狸花猫，2023-05-13 捡回（约1月龄）。现9.2斤。',dewormIn:'',dewormOut:'',fvrcp:'',rabies:''},
+  {name:'可可',sex:'公',status:'在册',tag:'😼',birth:'2022-08-14',avatarImg:'icons/cats/keke.png',info:'已绝育。重点色布偶，蓝眼睛。8.8斤。',dewormIn:'',dewormOut:'',fvrcp:'',rabies:''},
+  {name:'金喜',sex:'母',status:'在册',tag:'😺',birth:'2025-08-15',avatarImg:'icons/cats/jinxi.png',info:'已绝育。山猫纹布偶，蓝眼睛。10斤。',dewormIn:'',dewormOut:'',fvrcp:'',rabies:''}
 ];
+/* 驱虫疫苗频率（天）：科学来源见下方“驱虫疫苗科学指南”
+   体外驱虫 30 天（CAPC 建议全年无休预防）；体内驱虫 90 天（室内猫）；
+   FVRCP 加强针 1095 天（室内猫每 3 年，基础免疫后 1 岁加强）；狂犬疫苗 365 天（常见每年一次） */
+const HEALTH_FREQ={'体外驱虫':30,'体内驱虫':90,'FVRCP加强针':1095,'狂犬疫苗':365};
+const HEALTH_TYPES=['体外驱虫','体内驱虫','FVRCP加强针','狂犬疫苗','其他'];
+function addDays(ds,n){ const d=new Date(ds+'T00:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function dateDiffDays(a,b){ return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000); }
+function catHealthLastDate(cat,type){ const recs=(DB.cats.health||[]).filter(h=>h.cat===cat&&h.type===type).slice().sort((a,b)=>b.date.localeCompare(a.date)); return recs[0]?recs[0].date:null; }
+function catNextDate(cat,type){ const last=catHealthLastDate(cat,type); const base=last||(cat.birth||todayStr()); const freq=HEALTH_FREQ[type]||90; return addDays(base,freq); }
+function upcomingHealthItems(){ const items=[]; const horizon=addDays(todayStr(),365); CATS.filter(c=>c.status!=='已逝').forEach(c=>{ ['体外驱虫','体内驱虫','FVRCP加强针','狂犬疫苗'].forEach(type=>{ let d=catNextDate(c,type); while(d<=horizon){ items.push({cat:c.name,type,date:d}); d=addDays(d,HEALTH_FREQ[type]); } }); }); items.sort((a,b)=>a.date.localeCompare(b.date)); return items; }
 function catAge(birthStr){
   if(!birthStr)return'';
   const birth=new Date(birthStr); const now=new Date();
@@ -1223,16 +1306,275 @@ const CAT_KNOWLEDGE=[
   {t:'室内猫寿命',d:'在良好照护下，室内猫通常能活到15–18岁甚至更长；定期体检（老年猫每半年一次）有助于早发现肾病、甲减等。',src:'J Feline Med Surg, 2024'},
   {t:'环境丰容',d:'缺乏环境刺激的猫容易因压力而过度进食；提供猫爬架、躲藏处、每日互动玩耍有助于控制体重和行为问题。',src:'J Feline Med Surg, 2024'}
 ];
+/* ===== 宠物档案卡片折叠 ===== */
+function initCollapsibleCards(containerSelector){
+  const container=$(containerSelector); if(!container) return;
+  container.querySelectorAll('.card').forEach(card=>{
+    if(card.classList.contains('collapsible-ready')) return;
+    const header=card.querySelector('.card-h'); if(!header) return;
+    const body=document.createElement('div'); body.className='collapsible-body';
+    const children=Array.from(card.children).filter(c=>c!==header);
+    children.forEach(c=>body.appendChild(c));
+    card.appendChild(body);
+    const toggle=document.createElement('span'); toggle.className='card-toggle'; toggle.textContent='▾'; toggle.title='收起';
+    header.appendChild(toggle);
+    header.addEventListener('click',e=>{
+      if(e.target.closest('button,input,select,a,.card-toggle')) return;
+      card.classList.toggle('collapsed');
+      const collapsed=card.classList.contains('collapsed');
+      toggle.textContent=collapsed?'▸':'▾'; toggle.title=collapsed?'展开':'收起';
+      if(!collapsed && window._catWChart){ setTimeout(()=>window._catWChart.resize(),100); }
+    });
+    card.classList.add('collapsible-ready','collapsed');
+  });
+}
 function renderCats(){ $('#catGrid').innerHTML=CATS.map(c=>{
     const age=c.status==='已逝'?'约8-9岁':(c.birth?catAge(c.birth):'');
     return `<div class="cat-card"><div class="cat-ava-wrap">${catAvatar(c)}</div><div class="cat-body"><div class="cat-name">${c.tag} ${esc(c.name)}<span class="cat-tag">${c.sex}${c.status==='已逝'?' · 已逝':age?' · '+age:''}</span></div><div class="cat-info">${esc(c.info)}</div></div></div>`;
   }).join('');
-  $('#catEventName').innerHTML=CATS.map(c=>`<option>${c.name}</option>`).join('');
-  $('#catKnowledge').innerHTML=CAT_KNOWLEDGE.map(k=>`<div class="ck-item"><b>${esc(k.t)}：</b>${esc(k.d)} <span class="news-src">来源：${esc(k.src)}</span></div>`).join('');
-  $('#catEventList').innerHTML=DB.cats.events.length?DB.cats.events.slice().reverse().map(e=>`<div class="rec-item"><span>${esc(e.cat)} · ${e.date} · ${esc(e.desc)}</span><button class="rdel" onclick="delCatEvent('${e.date}','${esc(e.desc)}')">×</button></div>`).join(''):'<div class="hint">暂无健康事件</div>';
+  const healthCatsBox=$('#catHealthCats'); if(healthCatsBox){
+    const alive=CATS.filter(c=>c.status!=='已逝');
+    healthCatsBox.innerHTML=alive.map(c=>`<label class="chk"><input type="checkbox" value="${esc(c.name)}" data-chc> ${esc(c.name)}</label>`).join('');
+  }
+  renderCatPlanTable();
+  renderCatReminder();
+  renderCatHealthList();
+  updateCatHealthComboOptions();
+  renderCatWeight();
+  renderCatKB();
+  renderPetTip();
+  initCollapsibleCards('#cats');
 }
-function saveCatEvent(){ const cat=$('#catEventName').value; const date=$('#catEventDate').value||todayStr(); const desc=$('#catEventDesc').value.trim(); if(!desc){toast('请填事件');return;} DB.cats.events.push({cat,date,desc}); $('#catEventDesc').value=''; saveDB(); renderCats(); toast('已记录'); }
-function delCatEvent(d,desc){ DB.cats.events=DB.cats.events.filter(e=>!(e.date===d&&e.desc===desc)); saveDB(); renderCats(); }
+function renderCatPlanTable(){
+  const box=$('#catPlanTable'); if(!box)return;
+  let html='';
+  CATS.filter(c=>c.status!=='已逝').forEach(c=>{
+    html+=`<div class="plan-cat"><div class="plan-cat-name">${c.tag} ${esc(c.name)} <span class="hint">${c.birth?c.birth+' 生':''}</span></div>`;
+    ['体外驱虫','体内驱虫','FVRCP加强针','狂犬疫苗'].forEach(type=>{
+      const next=catNextDate(c,type); const days=dateDiffDays(todayStr(),next);
+      const cls=days<0?'ph-overdue':(days<=7?'ph-soon':'');
+      const tip=days<0?('逾期 '+(-days)+' 天'):('还有 '+days+' 天');
+      html+=`<div class="plan-row ${cls}"><span class="plan-type">${type}</span><span class="plan-date">${next}</span><span class="plan-days">${tip}</span></div>`;
+    });
+    html+='</div>';
+  });
+  box.innerHTML=html;
+}
+function renderCatReminder(){
+  const box=$('#catReminder'); if(!box)return;
+  const items=upcomingHealthItems();
+  if(!items.length){ box.innerHTML='<div class="hint">暂无待提醒的驱虫疫苗项</div>'; return; }
+  const sorted=items.slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const soon=sorted[0]; const days=dateDiffDays(todayStr(),soon.date);
+  const cls=days<0?'ph-overdue':(days<=7?'ph-soon':'');
+  const tip=days<0?('已逾期 '+(-days)+' 天'):('还有 '+days+' 天');
+  box.innerHTML=`<div class="reminder-big ${cls}">距离下次 <b>${esc(soon.cat)} · ${esc(soon.type)}</b> ${tip}（${soon.date}）</div><div class="reminder-sub">未来 12 个月共 ${items.length} 项待做，点下方按钮生成 .ics 导入手机日历做闹钟提醒。</div>`;
+}
+function renderCatHealthList(){
+  const box=$('#catHealthList'); if(!box)return;
+  const list=(DB.cats.health||[]).filter(h=>(CATS.find(c=>c.name===h.cat)||{}).status!=='已逝').slice().reverse();
+  box.innerHTML=list.length?list.map(h=>`<div class="rec-item"><span>${esc(h.cat)} · ${h.date} · ${esc(h.type)}${h.desc?(' · '+esc(h.desc)):''}</span><button class="rdel" onclick="delCatHealth('${h.id}')">×</button></div>`).join(''):'<div class="hint">还没有打卡记录，在上方选猫+项目+日期保存吧</div>';
+}
+function toggleHealthCats(all){ $$('#catHealthCats input[data-chc]').forEach(i=>i.checked=all); }
+function updateCatHealthComboOptions(){
+  const sel=$('#catHealthCombo'); if(!sel)return;
+  const type=$('#catHealthType')?$('#catHealthType').value:'';
+  let opts='<option value="">手动填写</option>';
+  if(type==='体外驱虫'||type==='体内驱虫'){
+    opts+='<optgroup label="常用组合（自动拆成内驱+外驱）">';
+    DEWORM_COMBOS.forEach(c=>opts+=`<option value="combo:${c.k}">${esc(c.name)}</option>`);
+    opts+='</optgroup>';
+  }
+  if(type==='体外驱虫'){
+    opts+='<optgroup label="单外驱">';
+    [...new Set(DEWORM_COMBOS.map(c=>c.outer))].forEach(o=>opts+=`<option value="outer:${esc(o)}">${esc(o)}</option>`);
+    opts+='</optgroup>';
+  }
+  if(type==='体内驱虫'){
+    opts+='<optgroup label="单内驱">';
+    [...new Set(DEWORM_COMBOS.map(c=>c.inner))].forEach(i=>opts+=`<option value="inner:${esc(i)}">${esc(i)}</option>`);
+    opts+='</optgroup>';
+  }
+  if(type==='FVRCP加强针'||type==='狂犬疫苗'){
+    opts+='<optgroup label="疫苗程序">';
+    VACCINE_PRESETS.filter(v=>v.type===type).forEach(v=>opts+=`<option value="vac:${v.k}">${esc(v.name)}</option>`);
+    opts+='</optgroup>';
+  }
+  sel.innerHTML=opts;
+}
+function onCatHealthTypeChange(){ updateCatHealthComboOptions(); $('#catHealthCombo').value=''; $('#catHealthDesc').value=''; }
+function onCatHealthComboChange(){
+  const sel=$('#catHealthCombo').value; if(!sel){ $('#catHealthDesc').value=''; return; }
+  const type=$('#catHealthType').value;
+  if(sel.startsWith('combo:')){
+    const c=DEWORM_COMBOS.find(x=>x.k===sel.split(':')[1]); if(c){ $('#catHealthDesc').value=c.note; }
+  }else if(sel.startsWith('outer:')){
+    $('#catHealthDesc').value='外驱 '+sel.split(':')[1];
+  }else if(sel.startsWith('inner:')){
+    $('#catHealthDesc').value='内驱 '+sel.split(':')[1];
+  }else if(sel.startsWith('vac:')){
+    const v=VACCINE_PRESETS.find(x=>x.k===sel.split(':')[1]); if(v){ $('#catHealthDesc').value=v.note; }
+  }
+}
+function saveCatHealth(){
+  const cats=$$('#catHealthCats input[data-chc]:checked').map(i=>i.value);
+  const date=$('#catHealthDate').value||todayStr();
+  const type=$('#catHealthType').value; const desc=$('#catHealthDesc').value.trim();
+  const combo=$('#catHealthCombo').value;
+  if(!type){toast('请选择项目');return;}
+  if(!cats.length){toast('请至少选择一只猫');return;}
+  DB.cats.health=DB.cats.health||[];
+  if(combo.startsWith('combo:')){
+    const c=DEWORM_COMBOS.find(x=>x.k===combo.split(':')[1]);
+    if(c){
+      cats.forEach(cat=>{
+        DB.cats.health.push({id:uid(),cat,date,type:'体内驱虫',desc:'内驱 '+c.inner});
+        DB.cats.health.push({id:uid(),cat,date,type:'体外驱虫',desc:'外驱 '+c.outer});
+      });
+      toast('已打卡：'+cats.join('、')+' 体内+体外驱虫 '+date);
+    }
+  }else{
+    cats.forEach(cat=> DB.cats.health.push({id:uid(),cat,date,type,desc}) );
+    toast('已打卡：'+cats.join('、')+' '+type+' '+date);
+  }
+  $('#catHealthDesc').value=''; $('#catHealthCombo').value='';
+  saveDB(); renderCats();
+}
+function delCatHealth(id){ DB.cats.health=DB.cats.health.filter(h=>h.id!==id); saveDB(); renderCats(); }
+function genHealthICS(){
+  const items=upcomingHealthItems();
+  if(!items.length){ toast('暂无可提醒的驱虫疫苗项'); return; }
+  let ics='BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//chengzhangji//cat-health//CN\nCALSCALE:GREGORIAN\n';
+  items.forEach(it=>{
+    const dt=it.date.replace(/-/g,''); const dtEnd=addDays(it.date,1).replace(/-/g,'');
+    ics+='BEGIN:VEVENT\n';
+    ics+='UID:'+uid()+'@chengzhangji\n';
+    ics+='DTSTART;VALUE=DATE:'+dt+'\n';
+    ics+='DTEND;VALUE=DATE:'+dtEnd+'\n';
+    ics+='SUMMARY:🐱'+it.cat+' '+it.type+'\n';
+    ics+='DESCRIPTION:驱虫疫苗提醒（来源：AAHA/AAFP Feline Vaccination Guidelines 2020、CAPC、WSAVA Vaccination Guidelines、Cornell Feline Health Center）\n';
+    ics+='BEGIN:VALARM\nACTION:DISPLAY\nDESCRIPTION:🐱'+it.cat+' 该做'+it.type+'啦！\nTRIGGER:-PT12H\nEND:VALARM\n';
+    ics+='END:VEVENT\n';
+  });
+  ics+='END:VCALENDAR';
+  const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='猫咪驱虫疫苗提醒.ics';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  toast('已生成 .ics，导入手机日历即可当闹钟提醒 📲');
+}
+
+/* ===== 猫咪体重记录与可视化 ===== */
+function addCatWeight(){
+  const cat=$('#catWeightCat').value; const date=$('#catWeightDate').value||todayStr();
+  const kg=parseFloat($('#catWeightKg').value);
+  if(!cat){toast('请选择猫咪');return;}
+  if(!(kg>0)){toast('请输入有效体重(kg)');return;}
+  DB.cats.weight=DB.cats.weight||{};
+  DB.cats.weight[cat]=DB.cats.weight[cat]||[];
+  DB.cats.weight[cat].push({id:uid(),date,kg});
+  DB.cats.weight[cat].sort((a,b)=>a.date.localeCompare(b.date));
+  $('#catWeightKg').value='';
+  saveDB(); renderCatWeight();
+  toast(cat+' '+date+' 体重 '+kg+'kg 已记录');
+}
+function delCatWeight(id){
+  for(const c in DB.cats.weight){ DB.cats.weight[c]=DB.cats.weight[c].filter(w=>w.id!==id); }
+  saveDB(); renderCatWeight();
+}
+function renderCatWeight(){
+  const sel=$('#catWeightCat');
+  if(sel) sel.innerHTML=CATS.filter(c=>c.status!=='已逝').map(c=>`<option>${c.name}</option>`).join('');
+  if($('#catWeightDate')) $('#catWeightDate').value=todayStr();
+  const cat=sel?sel.value:null;
+  const list=(DB.cats.weight&&cat)?(DB.cats.weight[cat]||[]):[];
+  const box=$('#catWeightList');
+  if(box) box.innerHTML=list.length?list.slice().reverse().map(w=>`<div class="rec-item"><span>${w.date} · ${w.kg} kg</span><button class="rdel" onclick="delCatWeight('${w.id}')">×</button></div>`).join(''):'<div class="hint">还没有体重记录，记下第一笔吧</div>';
+  requestAnimationFrame(()=>initCatWeightChart(cat,list));
+}
+function initCatWeightChart(cat,list){
+  const cv=$('#catWeightChart'); if(!cv)return;
+  const labels=list.map(w=>w.date);
+  const data=list.map(w=>w.kg);
+  const arr=data.length?data:[0];
+  if(window._catWChart)window._catWChart.destroy();
+  window._catWChart=new Chart(cv,{type:'line',data:{labels:labels.length?labels:['—'],datasets:[{label:cat?cat+' 体重(kg)':'体重',data:arr,borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.15)',tension:.3,fill:true,pointRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:!!cat}},scales:{y:{suggestedMin:Math.max(0,Math.min(...arr)-1),suggestedMax:Math.max(...arr)+1}}}});
+}
+
+/* ===== 猫病知识库（来自猫病手册 Excel） ===== */
+function renderCatKB(){
+  const box=$('#catKB'); if(!box)return;
+  const q=($('#kbSearch').value||'').trim();
+  let html='';
+  CAT_KB.forEach(sec=>{
+    const rows=sec.rows.filter(r=>!q || r.join(' ').includes(q));
+    if(q && !rows.length) return;
+    html+=`<div class="kb-sec"><div class="kb-sec-h">${esc(sec.title)}</div>`;
+    html+=`<table class="kb-tb"><thead><tr>${sec.head.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>`;
+    rows.forEach(r=>{ html+=`<tr>${sec.head.map((_,ci)=>`<td>${esc(r[ci]!==undefined?r[ci]:'')}</td>`).join('')}</tr>`; });
+    html+='</tbody></table></div>';
+  });
+  box.innerHTML=html||'<div class="hint">没有匹配的内容</div>';
+}
+
+/* ===== 每日养宠小知识（按日期轮换） ===== */
+function renderPetTip(){
+  const box=$('#catTip'); if(!box)return;
+  const all=$('#catTipAll');
+  const idx=Math.floor(Date.parse(todayStr()+'T00:00:00')/86400000)%PET_TIPS.length;
+  const tip=PET_TIPS[idx];
+  box.innerHTML=`<div class="ck-item"><b>${esc(tip.t)}：</b>${esc(tip.d)} <span class="news-src">来源：${esc(tip.src)}</span></div><div class="hint">今日第 ${idx+1}/${PET_TIPS.length} 条 · 明天自动换一条</div>`;
+  if(all) all.innerHTML=PET_TIPS.map(t=>`<div class="ck-item"><b>${esc(t.t)}：</b>${esc(t.d)} <span class="news-src">来源：${esc(t.src)}</span></div>`).join('');
+  const cnt=$('#catTipCount'); if(cnt) cnt.textContent=PET_TIPS.length;
+}
+
+/* ===== 仓库管理 ===== */
+function addItem(){
+  const name=$('#invName').value.trim();
+  const pd=$('#invProd').value; const ed=$('#invExp').value; const loc=$('#invLoc').value.trim();
+  const note=$('#invNote').value.trim();
+  if(!name){toast('请输入产品名称');return;}
+  if(!ed){toast('请填写保质期/过期日');return;}
+  DB.inventory=DB.inventory||[];
+  DB.inventory.push({id:uid(),name,pd,ed,loc,note,created:todayStr()});
+  $('#invName').value=''; $('#invProd').value=''; $('#invExp').value=''; $('#invLoc').value=''; $('#invNote').value='';
+  saveDB(); renderInventory();
+  toast('已入库：'+name);
+}
+function delItem(id){ DB.inventory=DB.inventory.filter(it=>it.id!==id); saveDB(); renderInventory(); }
+function renderInventory(){
+  const box=$('#invList'); if(!box)return;
+  const list=(DB.inventory||[]).slice().sort((a,b)=>a.ed.localeCompare(b.ed));
+  const y=todayStr().slice(0,4);
+  const expiringThisYear=list.filter(it=>it.ed.slice(0,4)===y);
+  const soonest=list[0];
+  const daysSoon=soonest?dateDiffDays(todayStr(),soonest.ed):null;
+  let html='';
+  if(soonest){
+    const warn=daysSoon<0?'inv-overdue':(daysSoon<=30?'inv-soon':'');
+    html+=`<div class="inv-warn ${warn}">⚠️ 最先过期：<b>${esc(soonest.name)}</b> · 到期 ${soonest.ed}${soonest.loc?(' · 放在 '+esc(soonest.loc)):''} · ${daysSoon<0?('已过期 '+(-daysSoon)+' 天'):('还剩 '+daysSoon+' 天')}</div>`;
+  }
+  if(expiringThisYear.length){
+    html+=`<div class="inv-sub">📅 今年（${y}）过期提醒（共 ${expiringThisYear.length} 件）</div><div class="inv-grid">`;
+    expiringThisYear.forEach(it=>{
+      const d=dateDiffDays(todayStr(),it.ed);
+      const cls=d<0?'inv-overdue':(d<=30?'inv-soon':'');
+      html+=`<div class="inv-card ${cls}"><div class="inv-name">${esc(it.name)}</div><div class="inv-meta">到期 ${it.ed}${it.loc?(' · '+esc(it.loc)):''}</div><div class="inv-days">${d<0?('已过期 '+(-d)+'天'):('剩 '+d+'天')}</div></div>`;
+    });
+    html+='</div>';
+  } else {
+    html+='<div class="hint">今年没有即将过期的物品 🎉</div>';
+  }
+  html+='<div class="inv-sub">📦 全部库存（按过期日排序）</div>';
+  html+=list.length?('<div class="rec-list">'+list.map(it=>{
+    const d=dateDiffDays(todayStr(),it.ed);
+    const cls=d<0?'inv-overdue':(d<=30?'inv-soon':'');
+    return `<div class="rec-item ${cls}"><span>${esc(it.name)} · 到期 ${it.ed}${it.loc?(' · '+esc(it.loc)):''}${it.pd?(' · 产'+it.pd):''}</span><button class="rdel" onclick="delItem('${it.id}')">×</button></div>`;
+  }).join('')+'</div>'):'<div class="hint">仓库还是空的，记下你囤的东西吧</div>';
+  box.innerHTML=html;
+}
 
 /* ===== 穿搭 ===== */
 const OUTFIT_BLOGGERS=[
@@ -1316,7 +1658,7 @@ async function loadOutfit(){
     <div class="outfit-tip">💡 ${o.tips}</div>
   </div>`;
   $('#outfitVisual').innerHTML=outfitVisualImg(temp);
-  $('#outfitBloggers').innerHTML=OUTFIT_BLOGGERS.map(b=>`<a href="https://search.bilibili.com/all?keyword=${encodeURIComponent(b.kw)}" target="_blank" class="ob-card"><div class="ob-name">${esc(b.n)}</div><div class="ob-d">${esc(b.d)}</div></a>`).join('');
+  renderOutfitBloggers();
 }
 function saveCity(){ const v=$('#citySel').value; DB.city=v; saveDB(); loadOutfit(); }
 
@@ -1335,18 +1677,120 @@ const BEAUTY=[
   {t:'唐毅 · 骨相修容',note:'修容不显脏',search:'唐毅 修容',dy:'唐毅修容'},
   {t:'易烫Etang · 眼妆教程',note:'新手眼妆进阶',search:'易烫 眼妆',dy:'易烫眼妆'}
 ];
-function renderBeauty(){
-  const box=$('#beautyList'); if(!box)return;
-  const {list}=pickRecs(BEAUTY,'beauty',6);
-  if(!list.length){ box.innerHTML='<div class="rec-sub">🎉 美妆博主都刷过啦！等每周二补充新面孔。</div>'; return; }
-  box.innerHTML=`<div class="rec-sub">🔥 优先推没看过的美妆博主 · 看过超${FORGET_DAYS}天复习重推 · 点「不想看」永不再推</div>`+list.map(r=>{
-    const it=r.it; const id=recId('beauty',it);
-    const bili='https://search.bilibili.com/all?keyword='+encodeURIComponent(it.search);
-    const dy='https://www.douyin.com/search/'+encodeURIComponent(it.dy||it.search);
-    const rev=r.review?'<span class="rec-rev">🔁复习</span>':'';
-    return `<div class="rec-card ${r.review?'is-review':''}"><div class="rec-ct"><span class="rec-type">美妆</span>${rev}</div><div class="rec-rt">${esc(it.t)}</div><div class="rec-rn">${esc(it.note)}</div><div class="rec-links"><a href="${bili}" target="_blank" class="rec-link">▶ B站</a><a href="${dy}" target="_blank" class="rec-link dy">▶ 抖音</a></div>${recBtns('beauty',id,r.review)}</div>`;
-  }).join('');
+function renderBloggerCards(boxId){
+  const box=$(boxId); if(!box) return;
+  const isOutfit=boxId==='#outfitBloggers';
+  const arr=isOutfit?DB.outfitBloggers:DB.beautyBloggers;
+  if(!arr){ box.innerHTML=''; return; }
+  box.innerHTML=arr.map(b=>`
+    <div class="bg-card">
+      <div class="bg-main">
+        <span class="bg-tag">${esc(b.tag||'博主')}</span>
+        <div class="bg-name">${esc(b.name)}</div>
+      </div>
+      <div class="bg-actions">
+        <a href="${esc(b.url||'#')}" target="_blank" class="bg-go">▶ 直达</a>
+        <button onclick="moveBlogger('${isOutfit?'outfit':'beauty'}','${b.id}',-1)" title="上移">↑</button>
+        <button onclick="moveBlogger('${isOutfit?'outfit':'beauty'}','${b.id}',1)" title="下移">↓</button>
+        <button class="bg-del" onclick="delBlogger('${isOutfit?'outfit':'beauty'}','${b.id}')">×</button>
+      </div>
+    </div>
+  `).join('');
 }
+function seedOutfitBloggers(){
+  if(!Array.isArray(DB.outfitBloggers)){
+    DB.outfitBloggers=OUTFIT_BLOGGERS.map((b,i)=>({id:'obd'+i,name:b.n,url:'https://search.bilibili.com/all?keyword='+encodeURIComponent(b.kw),tag:b.d}));
+    saveDB();
+  }
+}
+function seedBeautyBloggers(){
+  if(!Array.isArray(DB.beautyBloggers)){
+    DB.beautyBloggers=BEAUTY.map((b,i)=>({id:'bbd'+i,name:b.t,url:'https://search.bilibili.com/all?keyword='+encodeURIComponent(b.search),tag:b.note}));
+    saveDB();
+  }
+}
+function renderOutfitBloggers(){ seedOutfitBloggers(); renderBloggerCards('#outfitBloggers'); }
+function renderBeautyBloggers(){ seedBeautyBloggers(); renderBloggerCards('#beautyList'); }
+function addBlogger(type){
+  const name=$('#'+type+'BloggerName').value.trim();
+  const url=$('#'+type+'BloggerUrl').value.trim();
+  const tag=$('#'+type+'BloggerTag').value.trim();
+  if(!name){toast('请填写博主名称');return;}
+  if(!url){toast('请填写链接');return;}
+  const arr=type==='outfit'?DB.outfitBloggers:DB.beautyBloggers;
+  arr.push({id:uid(),name,url,tag:tag||(type==='outfit'?'穿搭':'美妆')});
+  $('#'+type+'BloggerName').value=''; $('#'+type+'BloggerUrl').value=''; $('#'+type+'BloggerTag').value='';
+  saveDB(); renderOutfitBloggers(); renderBeautyBloggers(); toast('已添加：'+name);
+}
+function delBlogger(type,id){
+  if(type==='outfit') DB.outfitBloggers=DB.outfitBloggers.filter(b=>b.id!==id);
+  else DB.beautyBloggers=DB.beautyBloggers.filter(b=>b.id!==id);
+  saveDB(); renderOutfitBloggers(); renderBeautyBloggers(); toast('已删除 ✓ 记得点「上传到云端」让三端都生效');
+}
+function moveBlogger(type,id,dir){
+  const arr=type==='outfit'?DB.outfitBloggers:DB.beautyBloggers;
+  const idx=arr.findIndex(b=>b.id===id); if(idx<0) return;
+  const ni=idx+dir; if(ni<0||ni>=arr.length) return;
+  [arr[idx],arr[ni]]=[arr[ni],arr[idx]];
+  saveDB(); renderOutfitBloggers(); renderBeautyBloggers();
+}
+
+/* ===== 灵感收纳箱 ===== */
+function extractUrls(text){
+  const re=/https?:\/\/[^\s\u4e00-\u9fa5]+/g;
+  return (text.match(re)||[]);
+}
+function guessTitle(text,url){
+  let t=text.replace(url,'').replace(/https?:\/\/\S+/g,'').trim();
+  t=t.replace(/[\n\r]+/g,' ');
+  if(t.length>40) t=t.slice(0,40)+'…';
+  return t||url||'未命名';
+}
+function onInspireDumpInput(){
+  const dump=$('#inspireDump').value.trim(); if(!dump)return;
+  const urls=extractUrls(dump);
+  if(urls.length && !$('#inspireUrl').value.trim()) $('#inspireUrl').value=urls[0];
+  if(!$('#inspireTitle').value.trim()) $('#inspireTitle').value=guessTitle(dump,urls[0]||'');
+}
+function addInspiration(){
+  const dump=$('#inspireDump').value.trim();
+  const title=$('#inspireTitle').value.trim()||guessTitle(dump,$('#inspireUrl').value.trim());
+  const url=$('#inspireUrl').value.trim();
+  const cat=$('#inspireCat').value;
+  const tags=$('#inspireTags').value.trim().split(/\s+/).filter(Boolean);
+  const content=dump;
+  if(!title && !dump && !url){toast('至少写点什么吧');return;}
+  DB.inspirations.push({id:uid(),title,url,content,cat,tags,done:false,created:Date.now()});
+  $('#inspireDump').value=''; $('#inspireTitle').value=''; $('#inspireUrl').value=''; $('#inspireTags').value=''; $('#inspireCat').selectedIndex=0;
+  saveDB(); renderInspirations(); toast('已丢进灵感箱');
+}
+function delInspiration(id){ DB.inspirations=DB.inspirations.filter(x=>x.id!==id); saveDB(); renderInspirations(); toast('已删除'); }
+function toggleInspirationDone(id){ const x=DB.inspirations.find(i=>i.id===id); if(x){x.done=!x.done; saveDB(); renderInspirations();} }
+let _inspireFilter='全部';
+function renderInspirations(){
+  const listBox=$('#inspireList'); const filterBox=$('#inspireFilter'); const countBox=$('#inspireCount');
+  if(!listBox)return;
+  const arr=DB.inspirations||[];
+  const cats=['全部',...INSPIRE_CATS];
+  filterBox.innerHTML=cats.map(c=>`<button class="chip ${_inspireFilter===c?'on':''}" onclick="setInspireFilter('${esc(c)}')">${esc(c)}</button>`).join('');
+  const filtered=_inspireFilter==='全部'?arr:arr.filter(x=>x.cat===_inspireFilter);
+  countBox.innerHTML=`${arr.length} 条${arr.filter(x=>x.done).length?' · 已完成 '+arr.filter(x=>x.done).length:''}`;
+  listBox.innerHTML=filtered.length?filtered.slice().reverse().map(it=>{
+    const tags=(it.tags||[]).map(t=>`<span class="inspire-tag">${esc(t)}</span>`).join('');
+    const link=it.url?`<a href="${esc(it.url)}" target="_blank" class="inspire-link">直达链接 ↗</a>`:'';
+    const body=it.content?`<div class="inspire-body">${esc(it.content).replace(/\n/g,'<br>')}</div>`:'';
+    return `<div class="inspire-card ${it.done?'done':''}">
+      <div class="inspire-h"><span class="inspire-cat">${esc(it.cat)}</span><span class="inspire-title">${esc(it.title)}</span><span class="inspire-date">${new Date(it.created).toLocaleDateString('zh-CN')}</span></div>
+      ${body}
+      <div class="inspire-meta">${tags}${link}</div>
+      <div class="inspire-actions">
+        <button class="btn-s ${it.done?'on':''}" onclick="toggleInspirationDone('${it.id}')">${it.done?'✓ 已完成':'标记完成'}</button>
+        <button class="btn-s" onclick="delInspiration('${it.id}')">删除</button>
+      </div>
+    </div>`;
+  }).join(''):'<div class="hint">箱子里还空空如也，看到好东西就往上方的框里丢～</div>';
+}
+function setInspireFilter(c){ _inspireFilter=c; renderInspirations(); }
 
 /* ===== 11. 抖音话题 ===== */
 const TRENDING=[
@@ -1370,18 +1814,6 @@ function renderTrending(){
   box.innerHTML=`<div class="news-date">📅 ${dateLabel} 各平台热门梗 · 每日轮换（不知道的梗我帮你解释）</div>`+
     items.map(k=>`<div class="trend-item"><div class="trend-top"><span class="trend-plat">${esc(k.plat)}</span><b>${esc(k.t)}</b></div><div class="trend-d">${esc(k.d)}</div></div>`).join('');
 }
-const DOUYIN=[
-  '【个人成长】"30岁才开始自律晚吗？" 反差开头+干货清单',
-  '【减脂日常】"高中老师的一日三餐" vlog+减脂餐',
-  '【养猫】"4只猫的修罗场" 搞笑日常合集',
-  '【语言学习】"零基础学韩语Day1" 打卡系列',
-  '【好物】"打工人桌面好物" 平价分享',
-  '【情感】"如何停止精神内耗" 共鸣向'
-];
-function renderDouyin(){ const arr=DB.douyin.length?DB.douyin:DOUYIN; $('#douyinTopics').innerHTML=arr.map((t,i)=>`<div class="dy-item"><span>${esc(t)}</span><button class="dy-del" onclick="delDouyin(${i})">×</button></div>`).join(''); }
-function addDouyin(){ const v=$('#dyInput').value.trim(); if(!v)return; if(!DB.douyin.length)DB.douyin=[]; DB.douyin.push(v); $('#dyInput').value=''; saveDB(); renderDouyin(); }
-function delDouyin(i){ DB.douyin.splice(i,1); saveDB(); renderDouyin(); }
-
 /* ===== 每周数据 ===== */
 function isoWeek(d){
   const date=new Date(d); const day=(date.getDay()+6)%7; date.setDate(date.getDate()-day);
@@ -1482,13 +1914,12 @@ const WISH_ITEMS=[
 const CUSTOM_WISH_DIFF={'小奖励':{cost:500,diff:'easy'},'中等奖励':{cost:2000,diff:'hard'},'大目标':{cost:10000,diff:'legend'}};
 const POINT_RULE=[
   {k:'待办完成',v:5},
-  {k:'保健品/种',v:2},
+  {k:'保健品/茶每种',v:2},
   {k:'早睡打卡',v:15},
   {k:'运动打卡',v:20},
   {k:'语言学习/分钟',v:1},
   {k:'记账/笔',v:5},
   {k:'阅读观影记录',v:25},
-  {k:'音乐番茄/首',v:5},
   {k:'体重记录',v:10}
 ];
 function calcPoints(){
@@ -1500,7 +1931,7 @@ function calcPoints(){
   DB.finance.forEach(()=>total+=5);
   DB.reading.forEach(()=>total+=25);
   DB.dietWeight.forEach(()=>total+=10);
-  Object.values(DB.musicPomo||{}).forEach(c=>total+=c*5);
+  Object.values(DB.teas||{}).forEach(arr=>total+=arr.length*2);
   if(DB.sleep&&DB.sleep.weekCheck){
     Object.values(DB.sleep.weekCheck).forEach(arr=>arr.forEach(v=>{if(v)total+=15;}));
   }
@@ -1539,7 +1970,11 @@ function importSyncCode(){ const code=$('#syncImport').value.trim(); if(!code){t
 // 统一的数据导入（同步码 / 数据文件 共用）：覆盖式写入
 function loadDBFromObject(d){
   try{
+    // 先记住本地已“接管”的博主清单（用户删过/加过），避免云端旧快照(博主为 null)把删除重置回默认
+    const localBeauty=DB.beautyBloggers, localOutfit=DB.outfitBloggers;
     DB=(d.checkin||d.finance||d.weight||d.language)?migrateOld(d):Object.assign(defaultDB(),d);
+    if(!Array.isArray(d.beautyBloggers) && Array.isArray(localBeauty)) DB.beautyBloggers=localBeauty;
+    if(!Array.isArray(d.outfitBloggers) && Array.isArray(localOutfit)) DB.outfitBloggers=localOutfit;
     saveDB(); initAll(); closeSyncModal(); toast('导入成功 ✓');
   }catch(e){ toast('数据无效'); }
 }
@@ -1622,22 +2057,18 @@ function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;',
 
 /* ===== 初始化 ===== */
 function initAll(){
+  normalizeDB();
   $('#topDate').textContent=new Date().toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'short'});
-  $('#dietDate').value=todayStr(); $('#finDate').value=todayStr(); $('#catEventDate').value=todayStr(); $('#dietLogDate').value=todayStr();
+  $('#dietDate').value=todayStr(); $('#finDate').value=todayStr(); $('#catHealthDate').value=todayStr(); $('#sleepRecordDate').value=todayStr(); $('#dietLogDate').value=todayStr();
   $('#finFilterMonth').value=todayStr().slice(0,7);
-  ensureTaskMasters(); renderTodos(); renderSupp(); renderAishang(); renderPomo(); renderMusicPomo(); renderSleep(); renderDietDay(); renderWeekPlan(); renderBodyStats(); $('#pantryInput').value=DB.pantry||'';
+  ensureTaskMasters(); renderTodos(); renderSupp(); renderAishang(); renderSleep(); renderDietDay(); renderWeekPlan(); renderBodyStats(); $('#pantryInput').value=DB.pantry||'';
   renderWorkoutToday(); renderWorkoutRec(); renderLang(); initFinSelects(); renderFinanceStats(); renderFinance(); renderRecurring(); renderAsset();
-  renderReading(); renderCats(); renderBeauty(); renderTrending(); renderDouyin();
+  renderReading(); renderCats(); renderInventory(); renderBeautyBloggers(); renderTrending(); renderInspirations();
   setWeek(todayStr()); renderWeekly();
   loadOutfit(); renderWish();
   renderDietLog();
   loadMarket(); renderKnowledge();
   setInterval(loadMarket,5*60*1000);
-  // 点开学习/训练视频时自动暂停音乐番茄
-  document.addEventListener('click',e=>{
-    const target=e.target.closest('a[href*="bilibili"],iframe[src*="bilibili"],.wo-play,.v-card a,.v-card iframe');
-    if(target && !e.target.closest('#musicPomo') && musicPlaying){ pauseMusicPomo(); toast('学习视频打开，音乐番茄钟已自动暂停'); }
-  });
 }
 buildBottomNav(); tryHashSync(); initAll();
 
