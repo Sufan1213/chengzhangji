@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="wingTop" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#ffb347"/>
+      <stop offset="60%" stop-color="#ff8c42"/>
+      <stop offset="100%" stop-color="#f4791f"/>
+    </radialGradient>
+    <radialGradient id="wingBot" cx="50%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#7ed6c1"/>
+      <stop offset="100%" stop-color="#3bb89a"/>
+    </radialGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff3e0"/>
+      <stop offset="100%" stop-color="#ffe0b2"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- 上翅 -->
+  <ellipse cx="175" cy="200" rx="92" ry="78" fill="url(#wingTop)" transform="rotate(-18 175 200)"/>
+  <ellipse cx="337" cy="200" rx="92" ry="78" fill="url(#wingTop)" transform="rotate(18 337 200)"/>
+  <!-- 下翅 -->
+  <ellipse cx="182" cy="330" rx="78" ry="70" fill="url(#wingBot)" transform="rotate(-12 182 330)"/>
+  <ellipse cx="330" cy="330" rx="78" ry="70" fill="url(#wingBot)" transform="rotate(12 330 330)"/>
+  <!-- 翅膀斑点 -->
+  <circle cx="150" cy="180" r="16" fill="#fff" opacity="0.85"/>
+  <circle cx="362" cy="180" r="16" fill="#fff" opacity="0.85"/>
+  <circle cx="165" cy="345" r="12" fill="#fff" opacity="0.8"/>
+  <circle cx="347" cy="345" r="12" fill="#fff" opacity="0.8"/>
+  <!-- 身体 -->
+  <rect x="250" y="150" width="12" height="220" rx="6" fill="#5a3e2b"/>
+  <!-- 触角 -->
+  <path d="M256 150 Q230 110 210 100" stroke="#5a3e2b" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <path d="M256 150 Q282 110 302 100" stroke="#5a3e2b" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <circle cx="208" cy="98" r="9" fill="#5a3e2b"/>
+  <circle cx="304" cy="98" r="9" fill="#5a3e2b"/>
+  <!-- 笑脸 -->
+  <circle cx="251" cy="250" r="3.5" fill="#fff"/>
+  <path d="M243 268 Q256 280 269 268" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>
+</svg>

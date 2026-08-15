@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ff8c42">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon.svg">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<title>🍊成长记 · 个人多功能工作台</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 顶部栏 -->
+<header class="topbar">
+  <button class="menu-toggle" id="menuToggle" aria-label="菜单">☰</button>
+  <div class="topbar-title">🍊 成长记</div>
+  <div class="topbar-right">
+    <span class="date-chip" id="topDate"></span>
+    <button class="sync-btn-top" onclick="openSyncModal()" title="数据同步">☁️</button>
+  </div>
+</header>
+
+<!-- 侧边导航 -->
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-group">日常</div>
+    <button class="nav-btn active" data-tab="plan"><span class="ni">📝</span><span class="nt">今日计划</span></button>
+    <button class="nav-btn" data-tab="sleep"><span class="ni">🌙</span><span class="nt">早睡计划</span></button>
+    <div class="sidebar-group">健康</div>
+    <button class="nav-btn" data-tab="diet"><span class="ni">🍽️</span><span class="nt">每日饮食</span></button>
+    <button class="nav-btn" data-tab="workout"><span class="ni">🏃</span><span class="nt">运动减肥</span></button>
+    <div class="sidebar-group">成长</div>
+    <button class="nav-btn" data-tab="language"><span class="ni">🗣️</span><span class="nt">语言学习</span></button>
+    <button class="nav-btn" data-tab="finance"><span class="ni">💰</span><span class="nt">个人记账</span></button>
+    <button class="nav-btn" data-tab="news"><span class="ni">📰</span><span class="nt">每日精选</span></button>
+    <button class="nav-btn" data-tab="reading"><span class="ni">📚</span><span class="nt">阅读观影</span></button>
+    <button class="nav-btn" data-tab="weekly"><span class="ni">📊</span><span class="nt">每周数据</span></button>
+    <div class="sidebar-group">生活</div>
+    <button class="nav-btn" data-tab="cats"><span class="ni">🐱</span><span class="nt">小猫档案</span></button>
+    <button class="nav-btn" data-tab="beauty"><span class="ni">💄</span><span class="nt">美妆学习</span></button>
+    <button class="nav-btn" data-tab="outfit"><span class="ni">👗</span><span class="nt">穿搭</span></button>
+    <button class="nav-btn" data-tab="douyin"><span class="ni">📷</span><span class="nt">抖音话题</span></button>
+    <button class="nav-btn" data-tab="wish"><span class="ni">🎁</span><span class="nt">心愿屋</span></button>
+    <div class="sidebar-foot">
+      <button class="sync-btn-side" onclick="openSyncModal()">☁️ 数据同步</button>
+    </div>
+  </aside>
+  <div class="sidebar-mask" id="sidebarMask"></div>
+
+  <main class="content" id="content">
+    <!-- 1. 今日计划 -->
+    <section class="module active" id="plan">
+      <h2 class="mod-title">📝 今日计划 · 待办 & 番茄 & 保健品</h2>
+      <p class="mod-desc">工作党的每日中枢：列出今天要做的事，用番茄钟专注，顺手完成保健品打卡。</p>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-h">✅ 今日待办 <button class="mini-btn" onclick="renderTodos()">↻</button></div>
+          <div class="todo-add">
+            <input type="text" id="todoInput" placeholder="今天要做什么？回车添加" onkeydown="if(event.key==='Enter')addTodo()">
+            <select id="todoRepeat" class="todo-repeat-select" title="重复规则" onchange="onRepeatChange()">
+              <option value="once">仅今天</option>
+              <option value="daily">每天</option>
+              <option value="alternate">隔天</option>
+              <option value="weekly">每周今天</option>
+              <option value="weekdays">工作日</option>
+              <option value="weekend">周末（六日）</option>
+              <option value="custom">自定义星期</option>
+            </select>
+            <button class="btn-p" onclick="addTodo()">添加</button>
+          </div>
+          <div id="customDays" style="display:none;gap:6px;flex-wrap:wrap;margin:6px 0 0">
+            <label class="cd"><input type="checkbox" value="1">一</label>
+            <label class="cd"><input type="checkbox" value="2">二</label>
+            <label class="cd"><input type="checkbox" value="3">三</label>
+            <label class="cd"><input type="checkbox" value="4">四</label>
+            <label class="cd"><input type="checkbox" value="5">五</label>
+            <label class="cd"><input type="checkbox" value="6">六</label>
+            <label class="cd"><input type="checkbox" value="0">日</label>
+          </div>
+          <ul class="todo-list" id="todoList"></ul>
+          <div id="todoMasters"></div>
+        </div>
+        <div class="card">
+          <div class="card-h">🍅 番茄钟</div>
+          <div class="pomo-tabs">
+            <button class="pomo-tab active" data-mode="focus" onclick="switchPomoMode('focus')">专注番茄</button>
+            <button class="pomo-tab" data-mode="music" onclick="switchPomoMode('music')">音乐番茄</button>
+          </div>
+          <div class="pomo-mode-panel active" id="focusPomo">
+            <div class="pomo">
+              <div class="pomo-time" id="pomoTime">25:00</div>
+              <div class="pomo-mode" id="pomoMode">专注</div>
+              <div class="pomo-btns">
+                <button class="btn-p" id="pomoToggle" onclick="togglePomo()">开始</button>
+                <button class="btn-s" onclick="resetPomo()">重置</button>
+              </div>
+              <div class="pomo-count">今日完成：<span id="pomoDone">0</span> 个番茄</div>
+            </div>
+            <div class="hint" style="margin-top:8px">适合：背单词、看学习视频、写教案等需要专注的任务。</div>
+          </div>
+          <div class="pomo-mode-panel" id="musicPomo">
+            <div class="music-player" id="musicPlayer">
+              <div class="music-now" id="musicNow"><div class="hint">点击歌单开始听歌番茄 🎵</div></div>
+              <div class="music-controls">
+                <button class="btn-s" onclick="prevMusicSong()">⏮</button>
+                <button class="btn-p" id="musicToggle" onclick="toggleMusicPomo()">开始</button>
+                <button class="btn-s" onclick="nextMusicSong()">⏭</button>
+                <button class="btn-s" onclick="stopMusicPomo()">⏹</button>
+                <label class="chk"><input type="checkbox" id="musicAutoNext" checked onchange="musicAutoNext=this.checked"> 连续播放</label>
+              </div>
+              <div class="music-count">今日已完成 <span id="musicCount">0</span> 首歌 = 等量番茄</div>
+              <button class="btn-p mt8" style="width:100%" onclick="openNetease()">🎧 一键去网易云听当前歌曲（账号 15329719907 · 多锻炼少生病）</button>
+              <div class="music-list" id="musicList"></div>
+              <div class="hint" style="margin-top:8px">每天自动推荐 10 首好歌（R&B 为主，混搭好听的风格）。听一首歌 = 一个番茄。点歌单里的🎧可直接跳网易云搜索；VIP 歌曲请用网易云 App 播放。点开 B站学习/训练视频时音乐会自动暂停。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">💊 今日保健品打卡 <span class="hint">勾选你今天吃的，和待办/番茄同一天记录</span></div>
+        <div class="supp-grid" id="suppGrid"></div>
+        <button class="btn-p mt8" onclick="saveSupplements()">保存保健品打卡</button>
+      </div>
+      <div class="card" id="aishangCard">
+        <div class="card-h">🌿 艾上山野三伏贴计划 <span class="hint">7月21日起自动按阶段轮换</span></div>
+        <div class="aishang-box">
+          <div class="aishang-start">
+            <label>开始日期 <input type="date" id="aishangStart" onchange="saveAishangStart()"></label>
+            <label class="chk ai-period-chk"><input type="checkbox" id="aishangPeriod" onchange="saveAishangPeriod()"> 今日经期模式（自动屏蔽禁用贴）</label>
+          </div>
+          <details class="ai-period-guide">
+            <summary>🩸 经期安全使用速查（点击展开）</summary>
+            <div class="aip-body">
+              <p class="aip-rule">核心铁律：经期盆腔充血，含强活血/川芎成分的产品<strong>绝对禁用</strong>；所有发热贴<strong>严禁过夜</strong>。</p>
+              <div class="aip-zone aip-red">
+                <div class="aip-title">❌ 红色警戒区：经期绝对禁用</div>
+                <ul>
+                  <li><b>石斛地黄暖阳贴</b>：含川芎（活血行气），禁用。</li>
+                  <li><b>红蛮腰双C贴 / 草本炫腹贴</b>：含泽兰、肉桂，覆盖子宫，禁用。</li>
+                </ul>
+              </div>
+              <div class="aip-zone aip-yellow">
+                <div class="aip-title">⚠️ 黄区：经期部分慎用</div>
+                <p class="aip-sub">前三天和量大者停用，后期酌用</p>
+                <ul>
+                  <li><b>西红花三七养元贴（八髎贴）</b>：含西红花、三七、川芎（破血化瘀）。前3天别贴，量大别贴。</li>
+                  <li><b>蒸汽脚踝贴</b>：覆盖“三阴交”活血穴，含川芎。前3天别贴（后期经量少时可用，助排残血）。</li>
+                  <li><b>蕲艾噗噗丸</b>：前3天别贴肚脐；若贴脚底涌泉穴，时间务必减半。</li>
+                </ul>
+              </div>
+              <div class="aip-zone aip-green">
+                <div class="aip-title">✅ 绿区：经期安心推荐</div>
+                <p class="aip-sub">非活血、无发热贴，全程可用</p>
+                <ul>
+                  <li><b>龙骨灸贴（超长背贴）</b>：只含艾叶+生姜，贴后背督脉，专治经期腰酸背痛、全身发冷，非常推荐。</li>
+                  <li><b>润目贴</b>：纯草本外敷眼周，无活血发热，随时可用。</li>
+                </ul>
+              </div>
+              <p class="aip-bottom">安全底线：除“噗噗丸（仅限贴脚底）”外，其余所有发热/贴敷产品<strong>夜间睡觉严禁过夜</strong>，请严格控制贴敷时长。</p>
+            </div>
+          </details>
+          <div class="aishang-head">
+            <div class="aishang-day">第 <span id="aishangDayNum">--</span> 天</div>
+            <div class="aishang-phase" id="aishangPhase">--</div>
+          </div>
+          <div class="aishang-desc" id="aishangDesc"></div>
+          <div class="aishang-today">
+            <span class="ai-label">今日贴敷：</span>
+            <div class="ai-tags" id="aishangItems"></div>
+          </div>
+          <div class="aishang-progress">
+            <div class="ai-prog-h"><span>已进行 <b id="aishangElapsed">0</b> 天 · App内打卡 <b id="aishangDone">0</b> 天</span><span id="aishangProgressText">0%</span></div>
+            <div class="ai-prog-track"><div class="ai-prog-fill" id="aishangProgFill"></div></div>
+            <div class="ai-prog-note" id="aishangNote"></div>
+          </div>
+          <div class="aishang-checks" id="aishangChecks"></div>
+          <div class="aishang-btns">
+            <button class="btn-p mt8" onclick="saveAishang()">保存今日贴敷</button>
+            <button class="btn-s mt8" onclick="backfillAishang()">补齐 7/21 至今为已贴</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 早睡计划 -->
+    <section class="module" id="sleep">
+      <h2 class="mod-title">🌙 早睡计划 · 循序渐进改善熬夜</h2>
+      <p class="mod-desc">你是熬夜大户（凌晨3-4点睡、6:30起），作为高中老师工作很累。我们不搞激进，按周逐步提前入睡时间。</p>
+      <div class="card">
+        <div class="card-h">🎯 你的自适应早睡目标</div>
+        <div id="sleepTargets"></div>
+        <div class="sleep-goal-note" id="sleepGoalNote"></div>
+        <div class="chart-box"><canvas id="sleepChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-h">🛏️ 记录今晚几点睡</div>
+        <div class="form-row">
+          <label>今天实际入睡时间<input type="time" id="sleepRecord"></label>
+        </div>
+        <button class="btn-p mt8" onclick="saveSleepRecord()">保存今天睡眠记录</button>
+        <div class="hint mt8" id="sleepRecordHint"></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-h">⏰ 每日作息设置</div>
+          <div class="form-row">
+            <label>工作日目标入睡<br><input type="time" id="sleepWork" value="23:30"></label>
+            <label>休息日目标入睡<br><input type="time" id="sleepRest" value="00:30"></label>
+            <label>固定起床<br><input type="time" id="sleepWake" value="06:30"></label>
+          </div>
+          <button class="btn-p mt8" onclick="saveSleepSetting()">保存作息</button>
+          <div class="hint mt8">当前第 <b id="sleepWeek">1</b> 周。目标会随你记录的入睡时间自动调整（平均再早15分钟），不用死磕固定计划。</div>
+        </div>
+        <div class="card">
+          <div class="card-h">🔔 提醒设置</div>
+          <div class="form-row">
+            <label>睡前提醒(洗漱/放手机)<br><input type="time" id="remindWind" value="22:30"></label>
+            <label>关机/勿扰提醒<br><input type="time" id="remindOff" value="23:00"></label>
+          </div>
+          <label class="chk"><input type="checkbox" id="remindWater"> 开启每小时饮水提醒（14:00-20:00）</label>
+          <button class="btn-p mt8" onclick="saveReminders()">保存提醒</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">📅 本周早睡打卡</div>
+        <div class="week-check" id="sleepWeekCheck"></div>
+        <button class="btn-p mt8" onclick="checkSleepToday()">✓ 打卡今天按时睡</button>
+      </div>
+      <div class="card tip-card">
+        <b>💡 打破恶性循环的小技巧</b>
+        <ul>
+          <li>工作累了别"报复性玩手机"：设定23:00手机进卧室充电，用纸书/拉伸代替刷短视频。</li>
+          <li>早起6:30已固定，靠<b>提前入睡</b>而非压缩起床来补觉，避免越熬越晚。</li>
+          <li>目标比你最近的平均入睡时间早15分钟，达标后下周自动再提前，循序渐进。</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3. 每日饮食 -->
+    <section class="module" id="diet">
+      <h2 class="mod-title">🍽️ 每日饮食 · 贵州口味渐进减脂餐</h2>
+      <p class="mod-desc">重辣可以保留，但油和盐要 progressively 减少。每周六生成采购清单，先填家里有的食材，再按需购买。</p>
+      <div class="card">
+        <div class="card-h">🥬 家里现有食材（pantry）</div>
+        <p class="hint">把冰箱/柜子里的食材用逗号或换行隔开，系统会自动匹配：家里有的不再让你买。</p>
+        <textarea id="pantryInput" placeholder="例如：鸡蛋、大米、老干妈、糊辣椒、生抽、大蒜..."></textarea>
+        <button class="btn-p mt8" onclick="savePantry()">保存 pantry & 重新匹配</button>
+      </div>
+      <div class="card">
+        <div class="card-h" id="shopCardTitle">🛒 本周采购清单</div>
+        <div id="shopList" class="shop-list"></div>
+        <div class="hint mt8">📅 每周六会突出提醒下周采购；平时也可见本周汇总。</div>
+      </div>
+      <div class="card">
+        <div class="card-h">📅 选择查看日期</div>
+        <div class="form-row">
+          <label>日期<input type="date" id="dietDate" onchange="renderDietDay();renderWeekPlan();"></label>
+          <span class="hint" id="dietDayLabel"></span>
+        </div>
+        <div class="diet-tabs">
+          <button class="dtab active" data-meal="breakfast" onclick="switchMeal(this)">🌅 早餐</button>
+          <button class="dtab" data-meal="lunch" onclick="switchMeal(this)">☀️ 午餐</button>
+          <button class="dtab" data-meal="dinner" onclick="switchMeal(this)">🌇 晚餐</button>
+        </div>
+        <div id="mealDetail" class="meal-detail"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">📆 本周餐单一览</div>
+        <div id="weekPlan"></div>
+      </div>
+      <p class="hint">📐 体重与三围记录已整合到「运动减肥 · 你的身材数据 &amp; 目标」卡片：每天体重、每 3 个月三围都在那里记，并自动对比基础数据分析。</p>
+      <div class="card">
+        <div class="card-h">🍱 记录实际饮食 & 营养分析</div>
+        <p class="hint">记下今天真实吃了什么（随便写，比如"米饭1碗 鸡胸150g 炒青菜"），点分析看热量和营养是否均衡，并给改进意见。数据按日期保存。</p>
+        <div class="form-row">
+          <label>日期<input type="date" id="dietLogDate"></label>
+        </div>
+        <textarea id="mealInB" class="meal-in" placeholder="🌅 早餐吃了什么..."></textarea>
+        <textarea id="mealInL" class="meal-in" placeholder="☀️ 午餐吃了什么..."></textarea>
+        <textarea id="mealInD" class="meal-in" placeholder="🌇 晚餐/夜宵吃了什么（没吃也写）..."></textarea>
+        <button class="btn-p mt8" onclick="analyzeDiet()">📊 分析今日饮食</button>
+        <div id="dietAnalyze" class="diet-analyze"></div>
+        <div id="dietLogHistory" class="diet-log-hist"></div>
+      </div>
+      <div id="dietCoach"></div>
+    </section>
+
+    <!-- 4. 运动减肥 -->
+    <section class="module" id="workout">
+      <h2 class="mod-title">🏃 运动减肥 · 瘦腰瘦腿改善圆肩</h2>
+      <p class="mod-desc">以爬坡为主（你保证完成），搭配帕梅拉/欧阳春晓/韩小四/jo姐的居家训练。每日清单清晰，量不大，能坚持。</p>
+      <div class="card">
+        <div class="card-h">📐 你的身材数据 &amp; 目标</div>
+        <p class="hint">基础数据（首次记录日写入）：体重 <b>66kg</b> · 腰围 <b>82cm</b> · 臀围 <b>102cm</b> · 大腿围 <b>63cm</b>。之后每天记体重、每 3 个月记三围，自动对比基础数据做分析。</p>
+
+        <div class="bs-sub">⚖️ 每日体重记录</div>
+        <div class="form-row">
+          <label>日期<input type="date" id="bsWeightDate"></label>
+          <label>体重(kg)<input type="number" id="bsWeightKg" step="0.1" placeholder="66.0"></label>
+          <label>备注<input type="text" id="bsWeightNote" placeholder="如：生理期/运动后"></label>
+        </div>
+        <button class="btn-p mt8" onclick="saveBsWeight()">保存体重</button>
+
+        <div class="bs-sub">📏 三围记录（每 3 个月一次）</div>
+        <div class="form-row">
+          <label>日期<input type="date" id="bsMeasDate"></label>
+          <label>腰围(cm)<input type="number" id="bsWaist" step="0.1" placeholder="82"></label>
+          <label>臀围(cm)<input type="number" id="bsHip" step="0.1" placeholder="102"></label>
+          <label>大腿围(cm)<input type="number" id="bsThigh" step="0.1" placeholder="63"></label>
+        </div>
+        <button class="btn-p mt8" onclick="saveMeasurement()">保存三围</button>
+        <div id="bsMeasDue" class="hint"></div>
+
+        <div class="bs-sub">🎯 目标体重</div>
+        <div class="form-row">
+          <label>目标(kg)<input type="number" id="bsTarget" step="0.1" placeholder="60"></label>
+        </div>
+        <button class="btn-p mt8" onclick="saveBsTarget()">保存目标</button>
+
+        <div id="bodyStats" class="body-stats"></div>
+        <button class="btn-s mt8" onclick="setBaselineFromCurrent()">将当前数据设为新基线</button>
+      </div>
+      <div class="card">
+        <div class="card-h">📅 今日训练清单</div>
+        <div id="workoutToday" class="workout-today"></div>
+        <div style="font-size:12px;color:var(--sub);margin-top:8px">爬坡尽量完成，没完成也没关系；每项训练点「完成打卡」即可记录。</div>
+      </div>
+      <div class="card">
+        <div class="card-h">🎬 训练视频推荐（不断推荐 · 带打卡）</div>
+        <div id="workoutRecList" class="rec-grid"></div>
+      </div>
+    </section>
+
+    <!-- 5. 语言学习 -->
+    <section class="module" id="language">
+      <h2 class="mod-title">🗣️ 语言学习 · 英 / 日 / 韩</h2>
+      <p class="mod-desc">自然输入 + 最近发展区：每天小任务，点击直达视频/素材。英语日语冲母语级，韩语当爱好。</p>
+      <div class="lang-tabs">
+        <button class="ltab active" data-lang="en" onclick="switchLang(this)">🇬🇧 英语</button>
+        <button class="ltab" data-lang="ja" onclick="switchLang(this)">🇯🇵 日语</button>
+        <button class="ltab" data-lang="ko" onclick="switchLang(this)">🇰🇷 韩语</button>
+      </div>
+      <div class="card">
+        <div class="card-h">✅ 本周小任务（最近发展区）</div>
+        <div id="langTasks" class="lang-tasks"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">🎬 学习视频 / 素材（点开即看）</div>
+        <div id="langVideos" class="video-list"></div>
+      </div>
+      <div class="card" id="jaRecommendCard" style="display:none">
+        <div class="card-h">📡 今日日语学习材料推荐（持续推送）</div>
+        <div id="jaRecommend" class="rec-grid"></div>
+      </div>
+      <div class="card" id="enRecommendCard" style="display:none">
+        <div class="card-h">📡 今日英语学习材料推荐（持续推送）</div>
+        <div id="enRecommend" class="rec-grid"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">📝 记录今日学习</div>
+        <div class="form-row">
+          <label>语言<select id="langRecName"><option value="英语">英语</option><option value="日语">日语</option><option value="韩语">韩语</option></select></label>
+          <label>时长(分)<input type="number" id="langRecMin" placeholder="20"></label>
+          <label>内容<input type="text" id="langRecContent" placeholder="看了/听了什么"></label>
+        </div>
+        <button class="btn-p mt8" onclick="saveLangRec()">保存</button>
+        <div id="langRecList" class="rec-list"></div>
+      </div>
+    </section>
+
+    <!-- 6. 个人记账 -->
+    <section class="module" id="finance">
+      <h2 class="mod-title">💰 个人记账 · 收支 & 预算 & 资产</h2>
+      <p class="mod-desc">区分收入/支出、自定义分类、月度预算提醒、周/月图表、固定账单。与行情板块联动汇总总资产。</p>
+      <div class="finance-stats" id="financeStats"></div>
+      <div class="card">
+        <div class="card-h">➕ 快速记一笔</div>
+        <div class="form-row">
+          <label>类型<select id="finType"><option value="支出">支出</option><option value="收入">收入</option></select></label>
+          <label>分类<select id="finCat"></select></label>
+          <label>金额<input type="number" id="finAmt" step="0.01" placeholder="0.00"></label>
+          <label>备注<input type="text" id="finNote" placeholder="说明"></label>
+          <label>日期<input type="date" id="finDate"></label>
+        </div>
+        <button class="btn-p mt8" onclick="addFinance()">保存记录</button>
+      </div>
+      <div class="card">
+        <div class="card-h">💼 资产 / 负债 & 净资产（与行情联动）</div>
+        <div class="asset-inputs">
+          <label>电子钱包(微信/支付宝/云闪付) ¥<input type="number" id="assetCash" onchange="saveAsset('cash',this.value)"></label>
+          <label>现有存款(银行) ¥<input type="number" id="assetSavings" onchange="saveAsset('savings',this.value)"></label>
+          <label>股票(手动) ¥<input type="number" id="assetStocks" onchange="saveAsset('stocks',this.value)"></label>
+          <label>基金(手动) ¥<input type="number" id="assetFunds" onchange="saveAsset('funds',this.value)"></label>
+          <label>黄金(g) <input type="number" id="assetGold" onchange="saveAsset('gold',this.value)"></label>
+        </div>
+        <div class="debt-inputs">
+          <div class="di-title">💳 负债（花呗 / 信用卡，帮你慢慢戒掉）</div>
+          <label>花呗欠款 ¥<input type="number" id="assetHuabei" onchange="saveAsset('huabei',this.value)"></label>
+          <label>信用卡欠款 ¥<input type="number" id="assetCard" onchange="saveAsset('card',this.value)"></label>
+        </div>
+        <div id="assetSummary" class="asset-summary"></div>
+        <div class="hint" id="assetHint"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">📊 统计图表</div>
+        <div class="chart-row">
+          <div><div class="chart-title">本月支出分类</div><div class="chart-box"><canvas id="finPie"></canvas></div></div>
+          <div><div class="chart-title">近6个月收支趋势</div><div class="chart-box"><canvas id="finTrend"></canvas></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">🔁 固定账单（房租/会员/还款）</div>
+        <div id="recurringList" class="rec-list"></div>
+        <div class="form-row mt8">
+          <label>名称<input type="text" id="recName" placeholder="房租"></label>
+          <label>金额<input type="number" id="recAmt" step="0.01"></label>
+          <label>每月几号<input type="number" id="recDay" min="1" max="31" value="1"></label>
+          <label>分类<select id="recCat"></select></label>
+        </div>
+        <button class="btn-s mt8" onclick="addRecurring()">添加固定账单</button>
+      </div>
+      <div class="card">
+        <div class="card-h">📜 已记录账单（可折叠，检查今日）</div>
+        <details>
+          <summary class="fin-summary">展开/收起 全部记录</summary>
+          <div class="form-row mt8">
+            <label>筛选月份<input type="month" id="finFilterMonth" onchange="renderFinance()"></label>
+            <label>关键词<input type="text" id="finFilterKw" placeholder="搜索备注/分类" oninput="renderFinance()"></label>
+          </div>
+          <div id="financeList" class="fin-list"></div>
+        </details>
+      </div>
+    </section>
+
+    <!-- 7. 每日精选 -->
+    <section class="module" id="news">
+      <h2 class="mod-title">📰 每日精选 · 行情 / 时事 / 通识</h2>
+      <p class="mod-desc">实时行情、国内外重要政策/新闻解读、各领域知识。时事政治优先，点击标题展开详细解读。</p>
+      <div class="market-grid" id="marketGrid"></div>
+      <div class="card">
+        <div class="card-h">🔥 时事政治（优先）</div>
+        <div id="affairsFeed" class="affairs-feed"></div>
+        <div class="hint">基于最新公开报道整理，点击标题展开背景与解读。</div>
+      </div>
+      <div class="card">
+        <div class="card-h">📡 财经 & 政策 & 知识</div>
+        <div id="newsFeed" class="news-feed"></div>
+        <div class="hint">行情每5分钟自动刷新（需联网）。知识卡片点击展开详细解释。</div>
+      </div>
+    </section>
+
+    <!-- 8. 阅读观影 -->
+    <section class="module" id="reading">
+      <h2 class="mod-title">📚 阅读观影 · 推荐 & 周任务</h2>
+      <p class="mod-desc">给你推荐书/影视，发布每周阅读任务。以能坚持为主，无视中断。</p>
+      <div class="card">
+        <div class="card-h">📌 本周阅读任务</div>
+        <div id="readingTask" class="reading-task"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">🌟 推荐池（点击可去微信读书/京东读书）</div>
+        <div id="readingRec" class="reading-rec"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">✍️ 记录已读</div>
+        <div class="form-row">
+          <label>类型<select id="rdType"><option>书</option><option>电影</option><option>剧</option><option>纪录片</option></select></label>
+          <label>标题<input type="text" id="rdTitle" placeholder="标题"></label>
+          <label>评分<input type="number" id="rdScore" min="1" max="5" placeholder="5"></label>
+          <label>感悟<input type="text" id="rdNote" placeholder="一句话"></label>
+        </div>
+        <button class="btn-p mt8" onclick="saveReading()">保存</button>
+        <div id="readingList" class="rec-list"></div>
+      </div>
+    </section>
+
+    <!-- 9. 每周数据 -->
+    <section class="module" id="weekly">
+      <h2 class="mod-title">📊 每周数据 · 历史回看 & 智能分析</h2>
+      <p class="mod-desc">选择任意一周，自动汇总你的打卡、体重、学习、消费、运动数据，并给出可落地的改进建议。</p>
+      <div class="card">
+        <div class="card-h">📅 选择周次</div>
+        <div class="form-row">
+          <label>周次<input type="week" id="weekSelect" onchange="renderWeekly()"></label>
+          <button class="btn-s" onclick="setWeek(todayStr())">本周</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">📋 本周概览</div>
+        <div class="weekly-summary" id="weeklySummary"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">✅ 打卡完成率</div>
+        <div class="weekly-check" id="weeklyCheck"></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-h">📉 体重变化</div>
+          <div class="chart-box"><canvas id="wkWeightChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-h">🗣️ 三语学习时长</div>
+          <div class="chart-box"><canvas id="wkLangChart"></canvas></div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-h">💰 本周支出分类</div>
+          <div class="chart-box"><canvas id="wkFinChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-h">🏃 运动完成</div>
+          <div id="wkWorkout" class="weekly-workout"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">🌙 本周睡眠（基于你记录的入睡时间）</div>
+        <div class="weekly-summary" id="wkSleep"></div>
+        <div class="chart-box"><canvas id="wkSleepChart"></canvas></div>
+        <div class="hint">记录越全，平均越准。目标是「比你平均早睡15分钟」，循序渐进。</div>
+      </div>
+      <div class="card tip-card">
+        <div class="card-h">💡 本周分析与下周建议</div>
+        <div id="weeklyAdvice" class="weekly-advice"></div>
+      </div>
+    </section>
+
+    <!-- 10. 小猫档案 -->
+    <section class="module" id="cats">
+      <h2 class="mod-title">🐱 小猫档案</h2>
+      <p class="mod-desc">4只猫的资料、健康记录，以及养猫知识推送。</p>
+      <div class="cat-grid" id="catGrid"></div>
+      <div class="card">
+        <div class="card-h">🩺 健康事件记录</div>
+        <div class="form-row">
+          <label>猫咪<select id="catEventName"></select></label>
+          <label>日期<input type="date" id="catEventDate"></label>
+          <label>事件<input type="text" id="catEventDesc" placeholder="驱虫/疫苗/异常..."></label>
+        </div>
+        <button class="btn-p mt8" onclick="saveCatEvent()">保存</button>
+        <div id="catEventList" class="rec-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">📚 养猫小知识</div>
+        <div id="catKnowledge" class="cat-knowledge"></div>
+      </div>
+    </section>
+
+    <!-- 10. 美妆学习 -->
+    <section class="module" id="beauty">
+      <h2 class="mod-title">💄 美妆学习 · 干货教程索引</h2>
+      <p class="mod-desc">整合姜乘澜、金大迪、莽歌歌、一枝楠楠、米米克及圆脸博主的思路与教程。</p>
+      <div class="card">
+        <div class="card-h">🎬 教程视频索引</div>
+        <div id="beautyList" class="video-list"></div>
+      </div>
+    </section>
+
+    <!-- 12. 穿搭 -->
+    <section class="module" id="outfit">
+      <h2 class="mod-title">👗 每日穿搭 · 天气+身材+博主灵感</h2>
+      <p class="mod-desc">根据今日天气、你的身材特点（155cm/66.5kg/梨型）自动推荐具体穿搭，点开博主找更多灵感。</p>
+      <div class="card">
+        <div class="card-h">🌤️ 今日天气 & 推荐</div>
+        <div class="form-row" style="margin-bottom:8px">
+          <label>城市<select id="citySel" onchange="saveCity()">
+            <option value="福泉">福泉</option>
+            <option value="遵义">遵义</option>
+            <option value="贵阳">贵阳</option>
+          </select></label>
+        </div>
+        <div id="weatherToday" class="weather-today">正在获取天气...</div>
+        <div id="outfitRec" class="outfit-rec"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">🎨 今日穿搭实拍参考（按温度带生成）</div>
+        <div id="outfitVisual" class="outfit-visual"></div>
+        <div style="font-size:11px;color:var(--sub);margin-top:6px">示意图为按梨型身材生成的真实穿搭参考图，具体单品以下方博主实拍为准。</div>
+      </div>
+      <div class="card">
+        <div class="card-h">👩‍🎤 推荐穿搭博主（点击直达B站）</div>
+        <div id="outfitBloggers" class="outfit-bloggers"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">📌 梨型身材穿搭法则</div>
+        <ul class="outfit-tips">
+          <li><b>扬长避短：</b>上半身可选露锁骨、泡泡袖、V领；下半身选A字裙/直筒裤/阔腿裤，避免紧身包臀。</li>
+          <li><b>腰线位置：</b>高腰设计能拉长比例，155cm优先选裤长/裙长在脚踝上方或膝盖上10cm。</li>
+          <li><b>颜色策略：</b>下装深色更显瘦，上装可用浅色/亮色提亮。</li>
+          <li><b>鞋子延伸：</b>乐福鞋、低跟裸靴、小白鞋都能视觉拉长腿型。</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 13. 抖音话题 -->
+    <section class="module" id="douyin">
+      <h2 class="mod-title">📷 抖音话题 · 热门梗 & 灵感库</h2>
+      <p class="mod-desc">每天帮你盘点各平台高赞/火的梗和话题，不知道的梗我顺手解释；下面的灵感库你想到什么随时写进去。</p>
+      <div class="card">
+        <div class="card-h">🔥 每日各平台热门梗（不懂的我来解释）</div>
+        <div id="trendingFeed" class="trending-feed"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">💡 选题灵感库（你自己写）</div>
+        <div id="douyinTopics" class="douyin-topics"></div>
+        <div class="todo-add mt8">
+          <input type="text" id="dyInput" placeholder="自己加一个选题/文案..." onkeydown="if(event.key==='Enter')addDouyin()">
+          <button class="btn-p" onclick="addDouyin()">添加</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14. 心愿屋 -->
+    <section class="module" id="wish">
+      <h2 class="mod-title">🎁 心愿屋 · 积分兑换商店</h2>
+      <p class="mod-desc">每一次认真打卡都会变成积分，来这里兑换小奖励。难度越高，积分越多，让坚持像游戏一样有反馈。</p>
+      <div class="card">
+        <div class="card-h">💎 我的积分</div>
+        <div class="wish-balance" id="wishBalance">加载中...</div>
+        <div class="wish-rule" id="wishRule"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">🛒 奖励商店</div>
+        <div class="wish-shop" id="wishShop"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">✏️ 自定义心愿</div>
+        <p class="hint">没有想要的？自己加一个。系统会按难度自动定价。</p>
+        <div class="form-row">
+          <label>心愿名称<input type="text" id="customWishName" placeholder="例如：买新包包"></label>
+          <label>难度<select id="customWishDiff"><option value="小奖励">小奖励（500分）</option><option value="中等奖励">中等奖励（2000分）</option><option value="大目标">大目标（10000分）</option></select></label>
+        </div>
+        <button class="btn-s mt8" onclick="addCustomWish()">添加自定义心愿</button>
+      </div>
+      <div class="card">
+        <div class="card-h">📜 兑换记录</div>
+        <div id="wishHistory" class="rec-list"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- 同步弹窗 -->
+<div class="modal-mask" id="syncModal">
+  <div class="modal">
+    <div class="modal-h">☁️ 多设备数据同步（手机 / 电脑1 / 电脑2）</div>
+    <p class="modal-sub">本应用是纯本地存储（localStorage），三个设备默认各存各的。下面<b>第一种「云端同步」能真正让三设备互通</b>（数据存到你自己的私有 GitHub Gist）；其余是备用搬运方式。</p>
+    <div class="modal-sec cloud">
+      <div class="modal-sec-t">☁️ 云端同步（GitHub Gist）— 推荐，三设备真正互通</div>
+      <p class="hint">把数据存到你名下的<b>私有</b> GitHub Gist，任何设备登录同一账号点一下就能同步，不用每晚手动导文件。<br>① 去 GitHub 生成一个 <b>只勾 gist 权限</b> 的 Token（<a href="https://github.com/settings/tokens?type=beta" target="_blank">点此打开</a>，勾 "gist" 一项即可）；② 粘贴保存；③ 首次点「⬆️上传到云端」自动创建私有备份，之后「上传 / 同步」即可。</p>
+      <label class="gist-token">GitHub Token <input type="password" id="gistToken" placeholder="ghp_xxxxxxxx" autocomplete="off"> <button class="btn-s" onclick="saveGistToken()">保存</button></label>
+      <div id="gistStatus" class="hint mt8"></div>
+      <div class="gist-btns">
+        <button class="btn-p" onclick="gistUpload()">⬆️ 上传到云端</button>
+        <button class="btn-p" onclick="gistDownload()">⬇️ 从云端同步</button>
+      </div>
+      <p class="hint mt8">⚠️ 安全：Token 仅保存在本机浏览器，<b>不会</b>进入应用数据（即不会被同步出去）。数据存在你私有 Gist，仅持 Token 者可访问。用完可随时在 GitHub 撤销该 Token。</p>
+    </div>
+    <div class="modal-sec">
+      <div class="modal-sec-t">📁 备用方式一：导出 / 导入数据文件</div>
+      <p class="hint">导出成一个 .json 文件 → 用微信"文件"、邮件、U盘发到另一台设备 → 在那台设备上点"选择文件导入"。文件不像长串同步码会被截断，且在本地预览(127.0.0.1)里也能导出/导入。</p>
+      <button class="btn-p" onclick="exportDataFile()">📤 导出数据文件（.json）</button>
+      <input type="file" id="syncFile" accept=".json,application/json" style="display:none" onchange="importDataFile(this)">
+      <button class="btn-s" onclick="document.getElementById('syncFile').click()">📥 选择文件导入</button>
+    </div>
+    <div class="modal-sec">
+      <div class="modal-sec-t">🔗 备用方式二：生成同步链接（仅限已部署的公网网址下）</div>
+      <p class="hint">点下方按钮生成带数据的网址，发到另一台设备打开即自动导入。<b>注意：只能在"已部署的公网网址"里生成才有效；在本地预览(127.0.0.1)生成的链接别的设备打不开。</b></p>
+      <button class="btn-p" onclick="genSyncLink()">生成同步链接</button>
+      <textarea id="syncLinkOut" readonly placeholder="点击上方生成" style="display:none"></textarea>
+      <button class="btn-s" id="syncCopyLink" onclick="(function(){var t=$('#syncLinkOut');t.select();document.execCommand('copy');toast('链接已复制');})()" style="display:none" data-show="syncLinkOut">📋 复制链接</button>
+    </div>
+    <div class="modal-sec">
+      <div class="modal-sec-t">📤 备用方式三：同步码（手动复制粘贴，手机易截断）</div>
+      <button class="btn-p" onclick="exportSyncCode()">生成同步码</button>
+      <textarea id="syncExport" readonly placeholder="点击上方生成"></textarea>
+      <button class="btn-s" id="syncCopy" onclick="copySyncCode()" style="display:none">📋 复制</button>
+      <div class="modal-sec-t mt8">📥 导入同步码（覆盖当前数据）</div>
+      <textarea id="syncImport" placeholder="粘贴同步码..."></textarea>
+      <button class="btn-p" onclick="importSyncCode()">导入数据</button>
+    </div>
+    <div class="modal-sec tip">
+      <div class="modal-sec-t">💡 三设备怎么用（云端同步）</div>
+      <p class="hint">① 任意设备都能记录，数据都进你同一个私有 Gist。<br>② 记完点「⬆️上传到云端」；换设备时点「⬇️从云端同步」即可拿到最新。<br>③ 云端以"<b>最后一次上传</b>"为准——为避免互相覆盖，建议只用一台主力机记录，其他设备先用「同步」拉最新再记。</p>
+    </div>
+    <button class="btn-s modal-close" onclick="closeSyncModal()">关闭</button>
+  </div>
+</div>
+
+<!-- 番茄钟提示音 -->
+<audio id="pomoAudio" preload="auto">
+  <source src="data:audio/wav;base64,UklGRl9vAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav">
+</audio>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

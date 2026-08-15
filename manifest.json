@@ -1,0 +1,27 @@
+{
+  "name": "🍊成长记 · 个人多功能工作台",
+  "short_name": "🍊成长记",
+  "description": "个人综合管理PWA：计划、饮食运动、语言学习、记账、行情、猫咪档案等",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff3e0",
+  "theme_color": "#ff8c42",
+  "lang": "zh-CN",
+  "categories": ["productivity", "health", "education"],
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
