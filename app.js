@@ -3,7 +3,7 @@
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const STORE = 'chengzhangji_v1';
-const SUPPLEMENTS = ['益生菌','优截片+油切饮','美白饮胶原蛋白饮','钙+维D','复合维生素+葡萄籽','优思明'];
+const SUPPLEMENTS = ['益生菌','优截片+油切饮','美白饮胶原蛋白饮','钙+维D','复合维生素+葡萄籽','优思明','磷虾油'];
 const TEA_PRESETS = ['畅纤青瓜波柠茶','紫苏桃子玄米茶','苹果西梅波波茶','紫苏桃子姜枣茶','七白椰桃茶','桃香金蜜果茶','全维C白白茶','苹果油柑果茶','话梅薄荷青柠茶','话梅菠萝冰茉莉','油柑话梅饮','杏皮话梅茉莉茶','抹茶椰子油柑话梅茶','油柑芭乐饮','苹果山楂菠萝茶','山楂苹果刮油茶','茉莉雪梨','小吊梨汤','竹蔗茅根雪梨水','甘蔗茅根雪梨水','薏米茯苓陈皮水','陈皮四神汤','南瓜消消饮','超模水','苹果黄芪素颜水','苹果姜枣茶','红参麦冬饮','元气四宝茶','桃红八物茶','四物汤','酸枣仁睡眠茶','蒲公英舒郁茶','七白饮','黄菊牛蒡茶','玫茉熬夜茶','人茯琦纤姿茶','平衡体重茶','胖大海金桔茶','经期排瘀茶','润肠通道茶','茯苓黄芪饮','五黑养发茶','玉米须桑叶茶','茉莉雪梨'];
 const DEWORM_COMBOS = [
   {k:'hai', name:'海乐妙 + 福来恩', inner:'海乐妙', outer:'福来恩', note:'内驱海乐妙 · 外驱福来恩'},
@@ -2002,7 +2002,23 @@ const GIST_TOKEN_KEY='czj_gist_token', GIST_ID_KEY='czj_gist_id', GIST_FILENAME=
 function getGistToken(){ return localStorage.getItem(GIST_TOKEN_KEY)||''; }
 function getGistId(){ return localStorage.getItem(GIST_ID_KEY)||''; }
 function saveGistToken(){ const t=$('#gistToken').value.trim(); if(!t){toast('请输入 Token');return;} localStorage.setItem(GIST_TOKEN_KEY,t); renderGistStatus(); toast('Token 已保存（仅存本机）'); }
-function renderGistStatus(){ const t=getGistToken(), id=getGistId(); if($('#gistStatus')) $('#gistStatus').innerHTML = (t?'✅ Token 已配置':'⚠️ 未配置 Token') + (id?' · 云端备份已建立':' · 未建立（首次上传将自动创建私有 Gist）'); }
+function renderGistStatus(){ const t=getGistToken(), id=getGistId();
+  if($('#gistStatus')){
+    const idTxt = id ? (' · Gist ID: '+id.slice(0,8)+'…'+id.slice(-4)) : ' · 未建立（首次上传将自动创建私有 Gist）';
+    $('#gistStatus').innerHTML = (t?'✅ Token 已配置':'⚠️ 未配置 Token') + idTxt;
+  }
+}
+function saveGistId(){ const id=$('#gistId').value.trim(); if(!id){toast('请输入 Gist ID');return;} localStorage.setItem(GIST_ID_KEY,id); renderGistStatus(); toast('Gist ID 已保存（本设备将指向此备份）'); }
+function copyGistId(){ const id=getGistId(); if(!id){toast('本设备还没有 Gist ID，请先在台式点一次『上传到云端』');return;}
+  if(navigator.clipboard){ navigator.clipboard.writeText(id).then(()=>toast('已复制 Gist ID ✓')).catch(()=>toast('复制失败，请手动记录：'+id)); }
+  else { toast('复制失败，请手动记录：'+id); }
+}
+async function findMyGist(){ try{
+  const list=await gistApi('GET','https://api.github.com/gists');
+  const found=(list||[]).find(g=>g.files&&g.files[GIST_FILENAME]);
+  if(found){ localStorage.setItem(GIST_ID_KEY,found.id); renderGistStatus(); $('#gistId').value=found.id; toast('已自动绑定到同账号备份 ✓'); return found.id; }
+  toast('没找到同账号已有备份，将在下次上传时新建'); return null;
+}catch(e){ toast('自动匹配失败：'+(e.message||e)); return null; } }
 async function gistApi(method,url,body){
   const res=await fetch(url,{method,headers:{'Authorization':'Bearer '+getGistToken(),'Content-Type':'application/json','Accept':'application/vnd.github+json'},body:body?JSON.stringify(body):undefined});
   if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.message||('HTTP '+res.status)); }

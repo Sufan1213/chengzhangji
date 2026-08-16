@@ -761,9 +761,16 @@
     <p class="modal-sub">本应用是纯本地存储（localStorage），三个设备默认各存各的。下面<b>第一种「云端同步」能真正让三设备互通</b>（数据存到你自己的私有 GitHub Gist）；其余是备用搬运方式。</p>
     <div class="modal-sec cloud">
       <div class="modal-sec-t">☁️ 云端同步（GitHub Gist）— 推荐，三设备真正互通</div>
-      <p class="hint">把数据存到你名下的<b>私有</b> GitHub Gist，任何设备登录同一账号点一下就能同步，不用每晚手动导文件。<br>① 去 GitHub 生成一个 <b>只勾 gist 权限</b> 的 Token（<a href="https://github.com/settings/tokens?type=beta" target="_blank">点此打开</a>，勾 "gist" 一项即可）；② 粘贴保存；③ 首次点「⬆️上传到云端」自动创建私有备份，之后「上传 / 同步」即可。</p>
+      <p class="hint">把数据存到你名下的<b>私有</b> GitHub Gist，任何设备登录同一账号点一下就能同步，不用每晚手动导文件。<br>① 去 GitHub 生成一个 <b>只勾 gist 权限</b> 的 Token（<a href="https://github.com/settings/tokens?type=beta" target="_blank">点此打开</a>，勾 "gist" 一项即可）；② 粘贴保存；③ 首次点「⬆️上传到云端」自动创建私有备份，之后「上传 / 同步」即可。<br>⚠️ <b>三设备要真正互通，必须填同一个 Gist ID</b>（不要各建各的）。在「主设备」（有最新数据的那台）点「📋 复制本机 ID」，把那串 ID 填到其它设备保存即可。</p>
       <label class="gist-token">GitHub Token <input type="password" id="gistToken" placeholder="ghp_xxxxxxxx" autocomplete="off"> <button class="btn-s" onclick="saveGistToken()">保存</button></label>
       <div id="gistStatus" class="hint mt8"></div>
+      <div class="gist-id-row">
+        <label class="gist-token">Gist ID（多设备共用同一份时，填主设备的 ID）<input id="gistId" placeholder="主设备的 Gist ID" autocomplete="off"> <button class="btn-s" onclick="saveGistId()">保存</button></label>
+        <div class="gist-id-btns">
+          <button class="btn-s" onclick="copyGistId()">📋 复制本机 ID</button>
+          <button class="btn-s" onclick="findMyGist()">🔍 自动匹配同账号备份</button>
+        </div>
+      </div>
       <div class="gist-btns">
         <button class="btn-p" onclick="gistUpload()">⬆️ 上传到云端</button>
         <button class="btn-p" onclick="gistDownload()">⬇️ 从云端同步</button>
